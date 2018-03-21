@@ -6,7 +6,6 @@ import curses
 import time
 
 stdscr = curses.initscr()
-
 curses.cbreak()
 stdscr.keypad(1)
 rospy.init_node('e_Stopper', anonymous=True)

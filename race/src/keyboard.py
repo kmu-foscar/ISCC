@@ -10,7 +10,7 @@ stdscr = curses.initscr()
 curses.cbreak()
 stdscr.keypad(1)
 rospy.init_node('keyboard_talker', anonymous=True)
-pub = rospy.Publisher('Controller', drive_values, queue_size=1)
+pub = rospy.Publisher('Control', drive_values, queue_size=1)
 
 stdscr.refresh()
 key = ''
