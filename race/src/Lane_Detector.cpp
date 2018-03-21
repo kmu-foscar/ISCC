@@ -11,7 +11,7 @@
 #include "opencv2/highgui.hpp"
 #include "opencv2/imgproc.hpp"
 #include <ros/ros.h>
-#include <std_msgs/UInt16.h>
+#include <race/drive_values.h>
 
 using namespace cv;
 using namespace std;
@@ -404,8 +404,8 @@ bool Lane_Detector::hough_right(Mat& img, Point* p1, Point* p2){
 int main(int argc, char** argv) {
     ros::init(argc, argv, "Controller");
     ros::NodeHandle nh;
-    ros::Publisher control_pub = nh.advertise<std_msgs::UInt16>("Controller", 1000);
-    std_msgs::UInt16 control_msg;
+    ros::Publisher control_pub = nh.advertise<race::drive_values>("Controller", 1000);
+    race::drive_values control_msg;
     Lane_Detector* ld = new Lane_Detector();
     ld->init();
     const int P_SLOPE = 2;
@@ -418,7 +418,8 @@ int main(int argc, char** argv) {
         int control = P_SLOPE * error_slope + 15 + P_POSITION * error_position;
         if(control > 100) control = 100;
         if(control < -100) control = -100;
-        control_msg.data = control + 100;
+        control_msg.steering = control + 100;
+        control_msg.throttle = 1550;
         cout << "============================" << endl;
         cout << "control : " << control << endl;
         cout << "left : " << ld->get_left_slope() << endl;
