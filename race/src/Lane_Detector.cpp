@@ -12,6 +12,7 @@
 #include "opencv2/imgproc.hpp"
 #include <ros/ros.h>
 #include <race/drive_values.h>
+#include <race/control_variables.h>
 
 #define P_SLOPE 2.0f
 #define P_POSITON -2.0f
