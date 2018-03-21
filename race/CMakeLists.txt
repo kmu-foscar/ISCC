@@ -53,9 +53,8 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate messages in the 'msg' folder
 	add_message_files(
 		FILES
-		drive_param.msg
+		control_variables.msg
 		drive_values.msg
-    pid_input.msg
 	)
 
 ## Generate services in the 'srv' folder
