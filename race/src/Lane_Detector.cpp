@@ -364,13 +364,10 @@ bool Lane_Detector::hough_left(Mat& img, Point* p1, Point* p2){
     return false;
 
   }
-
   return true;
-
 }
 
 bool Lane_Detector::hough_right(Mat& img, Point* p1, Point* p2){
-
   vector<Vec2f> linesR;
 
   Point point1;
@@ -408,9 +405,7 @@ bool Lane_Detector::hough_right(Mat& img, Point* p1, Point* p2){
       break;
     };
   }
-
   if (count != 0){
-
     x1 /= count;
     y1 /= count;
 
@@ -421,47 +416,7 @@ bool Lane_Detector::hough_right(Mat& img, Point* p1, Point* p2){
     p2->x = x2; p2->y = y2;
 
     return false;
-
   }
-
   return true;
 }
 
-Lane_Detector* ld;
-
-void testerCallback(const race::control_variables &msg) {
-    ld->set_control_variables(msg.p_slope, msg.p_position);
-}
-
-int main(int argc, char** argv) {
-    ros::init(argc, argv, "Controller");
-    ros::NodeHandle nh;
-    ros::Subscriber sub = nh.subscribe("control_variables", 1000, testerCallback);
-    ros::Publisher control_pub = nh.advertise<race::drive_values>("Control", 1000);
-    race::drive_values control_msg;
-    ld = new Lane_Detector();
-    ld->init();
-    
-    while(true) {
-        ld->operate();
-        float error_slope = ld->get_left_slope() + ld->get_right_slope();
-        float error_position = ld->get_left_length() - ld->get_right_length();
-        cout << "position : " << error_position << endl;
-        int control = ld->get_p_slope() * error_slope + 15 + ld->get_p_position() * error_position;
-        if(control > 100) control = 100;
-        if(control < -100) control = -100;
-        control_msg.steering = control + 100;
-        control_msg.throttle = 1;
-        cout << "============================" << endl;
-        cout << "control : " << control << endl;
-        cout << "left : " << ld->get_left_slope() << endl;
-        cout << "right : " << ld->get_right_slope() << endl;
-        cout << "left_length : " << ld->get_left_length() << endl;
-        cout << "right_length : " << ld->get_right_length() << endl;
-        cout << "============================" << endl;
-        control_pub.publish(control_msg);
-        ros::spinOnce();
-    }
-    delete ld;
-    return 0;
-}
