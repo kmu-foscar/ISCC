@@ -57,12 +57,21 @@ public :
     void init();
     void operate();
     void set_control_variables(float p_slope, float p_position);
+	float get_p_position();
+	float get_p_slope();
     float get_left_slope();
     float get_right_slope();
     float get_left_length();
     float get_right_length();
 };
-void Lane_Detector::set_control_variable(float p_slope, float p_position) {
+
+float Lane_Detector::get_p_position() {
+	return p_position;
+}
+float Lane_Detector::get_p_slope() {
+	return p_slope;
+}
+void Lane_Detector::set_control_variables(float p_slope, float p_position) {
     this->p_slope = p_slope;
     this->p_position = p_position;
 }
@@ -175,8 +184,13 @@ void Lane_Detector::operate(){
     left_slope = get_slope(p1, p2);
     right_slope = get_slope(p3, p4);
     position(p1, p3);
-    imshow("Left", originImg_left);
-    imshow("Right", originImg_right);
+	Mat a;
+	Mat b;
+
+	resize(originImg_left, a, Size(320, 240), 0, 0, CV_INTER_LINEAR);
+	resize(originImg_right, b, Size(320, 240), 0, 0, CV_INTER_LINEAR);
+    imshow("Left", a);
+    imshow("Right", b);
     if(waitKey(10) == 0){
       return;
     }
@@ -413,17 +427,19 @@ bool Lane_Detector::hough_right(Mat& img, Point* p1, Point* p2){
   return true;
 }
 
+Lane_Detector* ld;
+
 void testerCallback(const race::control_variables &msg) {
-    set_control_variables(msg.p_slope, msg.p_position);
+    ld->set_control_variables(msg.p_slope, msg.p_position);
 }
 
 int main(int argc, char** argv) {
     ros::init(argc, argv, "Controller");
-    ros::Subscriber sub = nh.subscribe("control_variables", 1000, testerCallback);
     ros::NodeHandle nh;
+    ros::Subscriber sub = nh.subscribe("control_variables", 1000, testerCallback);
     ros::Publisher control_pub = nh.advertise<race::drive_values>("Control", 1000);
     race::drive_values control_msg;
-    Lane_Detector* ld = new Lane_Detector();
+    ld = new Lane_Detector();
     ld->init();
     
     while(true) {
@@ -431,11 +447,11 @@ int main(int argc, char** argv) {
         float error_slope = ld->get_left_slope() + ld->get_right_slope();
         float error_position = ld->get_left_length() - ld->get_right_length();
         cout << "position : " << error_position << endl;
-        int control = p_slope * error_slope + 15 + p_position * error_position;
+        int control = ld->get_p_slope() * error_slope + 15 + ld->get_p_position() * error_position;
         if(control > 100) control = 100;
         if(control < -100) control = -100;
         control_msg.steering = control + 100;
-        control_msg.throttle = 1550;
+        control_msg.throttle = 1;
         cout << "============================" << endl;
         cout << "control : " << control << endl;
         cout << "left : " << ld->get_left_slope() << endl;

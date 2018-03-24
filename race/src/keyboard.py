@@ -25,11 +25,15 @@ while key != ord('q'):
 		throttle += 1
 		if throttle > 1 :
 			throttle = 1
+		elif throttle == 0 :
+			stdscr.addstr(2, 20, "Stop!!")
 	elif key == curses.KEY_DOWN :
 		stdscr.addstr(2, 20, "Brake!")
 		throttle -= 1
 		if throttle < -1 :
 			throttle = -1
+		elif throttle == 0 :
+			stdscr.addstr(2, 20, "Stop!!")
 	elif key == curses.KEY_LEFT :
 		stdscr.addstr(2, 20, "LEFT!!")
 		steering -= 10
@@ -43,8 +47,7 @@ while key != ord('q'):
 	elif key == curses.KEY_DC :
 		stdscr.addstr(2, 20, "CENTER")
 		steering = 0
-	if throttle == 0 :
-		stdscr.addstr(2, 20, "Stop!!")
+	
 	msg = drive_values()
 	msg.throttle = throttle
 	msg.steering = steering + 100
