@@ -28,7 +28,6 @@ int main(int argc, char** argv) {
 
 void testerCallback(const race::control_variables &msg) {
     p_steering = msg.p_steering;
-    p_throttle = msg.p_throttle;
 }
 void generate_control_msg(race::drive_values* control_msg) {
     int steering;

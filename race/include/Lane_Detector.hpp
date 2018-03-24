@@ -17,9 +17,6 @@
 #include <race/drive_values.h>
 #include <race/control_variables.h>
 
-#define P_SLOPE 2.0f
-#define P_POSITON -2.0f
-
 using namespace cv;
 using namespace std;
 
@@ -57,8 +54,6 @@ public :
     float get_right_slope();
     float get_left_length();
     float get_right_length();
-    float get_p_slope();
-    float get_p_position();
     bool is_left_error();
     bool is_right_error();
     bool get_intersectpoint(const Point& AP1, const Point& AP2,
@@ -70,12 +65,6 @@ bool is_left_error() {
 }
 bool is_right_error() {
   return right_error;
-}
-float Lane_Detector::get_p_position() {
-	return p_position;
-}
-float Lane_Detector::get_p_slope() {
-	return p_slope;
 }
 int Lane_Detector::position(const Point P1, const Point P3) {
     float x_L;
@@ -114,8 +103,6 @@ void Lane_Detector::init(){
   right_error = false;
   left_length = 0;
   right_length = 0;
-  p_slope = P_SLOPE;
-  p_position = P_POSITON;
 }
 
 void Lane_Detector::operate(){
