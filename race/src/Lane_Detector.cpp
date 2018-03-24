@@ -1,18 +1,4 @@
-#include <iostream>
-#include <fstream>
-#include <ctime>
-#include <queue>
-#include <cv.h>
-#include <cv_bridge/cv_bridge.h>
-#include <unistd.h>
-#include <highgui.h>
-#include "opencv2/opencv.hpp"
-#include "opencv2/objdetect.hpp"
-#include "opencv2/highgui.hpp"
-#include "opencv2/imgproc.hpp"
-#include <ros/ros.h>
-#include <race/drive_values.h>
-#include <race/control_variables.h>
+#include "Lane_Detector.h"
 
 #define P_SLOPE 2.0f
 #define P_POSITON -2.0f
