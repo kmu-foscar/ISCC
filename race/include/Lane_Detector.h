@@ -60,6 +60,8 @@ public :
     float get_right_slope();
     float get_left_length();
     float get_right_length();
+    float get_p_slope();
+    float get_p_position();
 };
 
 #endif
