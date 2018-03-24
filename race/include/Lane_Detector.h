@@ -20,6 +20,10 @@
 #define P_SLOPE 2.0f
 #define P_POSITON -2.0f
 
+
+using namespace cv;
+using namespace std;
+
 class Lane_Detector {
 private :
     float p_slope;
