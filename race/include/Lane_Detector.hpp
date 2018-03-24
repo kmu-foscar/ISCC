@@ -28,8 +28,6 @@ const CvScalar COLOR_RED = CvScalar(0, 0, 255);
 
 class Lane_Detector {
 private :
-    float p_slope;
-    float p_position;
     float left_slope;
     float right_slope;
     float left_length;
@@ -57,24 +55,27 @@ public :
     Lane_Detector(){}
     void init();
     void operate();
-    void set_control_variables(float p_slope, float p_position);
     float get_left_slope();
     float get_right_slope();
     float get_left_length();
     float get_right_length();
     float get_p_slope();
     float get_p_position();
+    bool is_left_error();
+    bool is_right_error();
 };
 
+bool is_left_error() {
+  return left_error;
+}
+bool is_right_error() {
+  return right_error;
+}
 float Lane_Detector::get_p_position() {
 	return p_position;
 }
 float Lane_Detector::get_p_slope() {
 	return p_slope;
-}
-void Lane_Detector::set_control_variables(float p_slope, float p_position) {
-    this->p_slope = p_slope;
-    this->p_position = p_position;
 }
 int Lane_Detector::position(const Point P1, const Point P3) {
     float x_L;

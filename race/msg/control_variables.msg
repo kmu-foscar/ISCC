@@ -1,2 +1,2 @@
-float32 p_slope
-float32 p_position
+float32 p_steering
+float32 p_throttle
