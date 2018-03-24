@@ -9,7 +9,7 @@ Controller::~Controller() {
 void Controller::testerCallback(const race::control_variables &msg) {
     ld->set_control_variables(msg.p_slope, msg.p_position);
 }
-void Controller::generate_control_msg() {
+void Controller::generate_control_msg(race::drive_values* control_msg) {
     ld->operate();   
 }
 
