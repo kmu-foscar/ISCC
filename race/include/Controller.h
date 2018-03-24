@@ -9,7 +9,7 @@ private :
 public :
     Controller();
     ~Controller();
-    void testerCallback(const race::control_variables &msg);
+    void* testerCallback(const race::control_variables &msg);
     void generate_control_msg(race::drive_values* control_msg);    
 };
 
