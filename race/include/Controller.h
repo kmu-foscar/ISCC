@@ -4,7 +4,10 @@
 #include "Lane_Detector.h"
 
 class Controller {
+private :
+    Lane_Detector* ld;
 public :
+    Controller();
     void testerCallback(const race::control_variables &msg);
     void generate_control_msg(race::drive_values* control_msg);    
 };
