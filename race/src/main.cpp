@@ -15,7 +15,7 @@ int main(int argc, char** argv) {
     ld = new Lane_Detector();
     sub = nh.subscribe("control_variables", 1000, testerCallback);
     control_pub = nh.advertise<race::drive_values>("Control", 1000);
-    
+    ld->init();
     while(true) {
         ld->operate();
         generate_control_msg(&control_msg);
