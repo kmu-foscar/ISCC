@@ -7,9 +7,7 @@ rospy.init_node('Tester', anonymous=True)
 pub = rospy.Publisher('control_variables', control_variables, queue_size=1)
 
 while True :
-	p_slope = input('p_slope : ')
-	p_position = input('p_position : ')
+	p_slope = input('p_steering : ')
 	msg = control_variables()
-	msg.p_slope = float(p_slope)
-	msg.p_position = float(p_position)
+	msg.p_steering = float(p_steering)
 	pub.publish(msg)

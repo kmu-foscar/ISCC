@@ -5,8 +5,7 @@ race::drive_values control_msg;
 ros::NodeHandle nh;
 ros::Subscriber sub; 
 ros::Publisher control_pub;
-float p_steering = 2.0f;
-float p_throttle = -2.0f;
+float p_steering = 0.05f;
 
 void testerCallback(const race::control_variables &msg);
 void generate_control_msg(race::drive_values* control_msg);
