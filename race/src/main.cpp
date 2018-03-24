@@ -24,6 +24,6 @@ int main(int argc, char** argv) {
         control_pub.publish(control_msg);
         ros::spinOnce();
     }
-    delete controller;
+    delete ld;
     return 0;
 }
