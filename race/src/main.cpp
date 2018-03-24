@@ -2,7 +2,6 @@
 #include <algorithm>
 Lane_Detector* ld;
 race::drive_values control_msg;
-ros::NodeHandle nh;
 ros::Subscriber sub; 
 ros::Publisher control_pub;
 float p_steering = 0.05f;
@@ -12,6 +11,7 @@ void generate_control_msg(race::drive_values* control_msg);
 
 int main(int argc, char** argv) {
     ros::init(argc, argv, "Controller");
+    ros::NodeHandle nh;
     ld = new Lane_Detector();
     sub = nh.subscribe("control_variables", 1000, testerCallback);
     control_pub = nh.advertise<race::drive_values>("Control", 1000);
