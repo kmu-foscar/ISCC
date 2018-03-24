@@ -126,9 +126,9 @@ include_directories(
 )
 
 ## Declare a C++ library
-# add_library(race
-#   src/${PROJECT_NAME}/race.cpp
-# )
+add_library(race
+   src/Lane_Detector.cpp src/Controller.cpp src/main.cpp 
+)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
