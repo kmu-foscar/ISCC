@@ -60,10 +60,10 @@ public :
                            const Point& BP1, const Point& BP2, Point* IP);
 };
 
-bool is_left_error() {
+bool Lane_Detector::is_left_error() {
   return left_error;
 }
-bool is_right_error() {
+bool Lane_Detector::is_right_error() {
   return right_error;
 }
 int Lane_Detector::position(const Point P1, const Point P3) {
