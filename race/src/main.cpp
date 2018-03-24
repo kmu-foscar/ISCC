@@ -4,7 +4,7 @@ int main(int argc, char** argv) {
     ros::init(argc, argv, "Controller");
     ros::NodeHandle nh;
     Controller* controller = new Controller();
-    ros::Subscriber sub = nh.subscribe("control_variables", 1000, Controller::testerCallback);
+    ros::Subscriber sub = nh.subscribe("control_variables", 1000, &(controller->testerCallback));
     ros::Publisher control_pub = nh.advertise<race::drive_values>("Control", 1000);
     race::drive_values control_msg;
     while(true) {
