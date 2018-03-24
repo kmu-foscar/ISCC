@@ -56,6 +56,6 @@ void generate_control_msg(race::drive_values* control_msg) {
     }
     steering = min(max(steering, -100), 100);
     steering += 100;
-    control_msg.steering = steering;
-    control_msg.throttle = 1;
+    control_msg->steering = steering;
+    control_msg->throttle = 1;
 }

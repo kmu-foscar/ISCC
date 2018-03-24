@@ -46,8 +46,6 @@ private :
     void region_of_interest_R(Mat& img, Mat& img_ROI);
     bool hough_left(Mat& img, Point* p1, Point* p2);
     bool hough_right(Mat& img, Point* p1, Point* p2);
-    bool get_intersectpoint(const Point& AP1, const Point& AP2,
-                           const Point& BP1, const Point& BP2, Point* IP);
     float get_slope(const Point& p1, const Point& p2);
     int position(const Point P1, const Point P2);
 public :
@@ -63,6 +61,8 @@ public :
     float get_p_position();
     bool is_left_error();
     bool is_right_error();
+    bool get_intersectpoint(const Point& AP1, const Point& AP2,
+                           const Point& BP1, const Point& BP2, Point* IP);
 };
 
 bool is_left_error() {
