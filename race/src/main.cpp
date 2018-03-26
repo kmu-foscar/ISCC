@@ -4,7 +4,7 @@ Lane_Detector* ld;
 race::drive_values control_msg;
 ros::Subscriber sub; 
 ros::Publisher control_pub;
-float p_steering = 0.05f;
+float p_steering = -0.3f;
 
 void testerCallback(const race::control_variables &msg);
 void generate_control_msg(race::drive_values* control_msg);
@@ -54,6 +54,7 @@ void generate_control_msg(race::drive_values* control_msg) {
         steering = 0;
     }
     steering = min(max(steering, -100), 100);
+    printf("steering : %d\n", steering);
     steering += 100;
     control_msg->steering = steering;
     control_msg->throttle = 1;
