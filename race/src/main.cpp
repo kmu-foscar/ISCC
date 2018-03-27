@@ -1,7 +1,10 @@
 #include "Lane_Detector.hpp"
 #include <algorithm>
+#include <ros/ros.h>
+#include <race/drive_values.h>
+#include <race/control_variables.h>
 
-#define CENTER_POINT 850
+#define CENTER_POINT 640
 
 Lane_Detector* ld;
 race::drive_values control_msg;

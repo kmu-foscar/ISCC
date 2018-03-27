@@ -13,9 +13,7 @@
 #include "opencv2/objdetect.hpp"
 #include "opencv2/highgui.hpp"
 #include "opencv2/imgproc.hpp"
-#include <ros/ros.h>
-#include <race/drive_values.h>
-#include <race/control_variables.h>
+
 
 using namespace cv;
 using namespace std;
