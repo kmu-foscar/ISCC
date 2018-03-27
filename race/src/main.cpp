@@ -11,7 +11,7 @@ race::drive_values control_msg;
 ros::Subscriber sub; 
 ros::Publisher control_pub;
 float p_steering = -0.3f;
-
+float p_steering_curve = 100.f;
 void testerCallback(const race::control_variables &msg);
 void generate_control_msg(race::drive_values* control_msg);
 
@@ -34,6 +34,7 @@ int main(int argc, char** argv) {
 
 void testerCallback(const race::control_variables &msg) {
     p_steering = msg.p_steering;
+	p_steering_curve = msg.p_steering_curve;
 }
 void generate_control_msg(race::drive_values* control_msg) {
     int steering;
@@ -51,10 +52,10 @@ void generate_control_msg(race::drive_values* control_msg) {
         steering = p_steering * error_steering; 
     } 
     else if(ld->is_left_error()) {
-        steering = -30 * ld->get_right_slope();
+        steering = -p_steering_curve * ld->get_right_slope();
     }
     else if(ld->is_right_error()) {
-        steering = 30 * ld->get_left_slope();
+        steering = p_steering_curve * ld->get_left_slope();
     }
     else {
         steering = 0;
