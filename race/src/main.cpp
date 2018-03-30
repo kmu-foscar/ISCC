@@ -64,5 +64,5 @@ void generate_control_msg(race::drive_values* control_msg) {
     printf("steering : %d\n", steering);
     steering += 100;
     control_msg->steering = steering;
-    control_msg->throttle = 1;
+    control_msg->throttle = 0;
 }

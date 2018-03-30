@@ -3,7 +3,8 @@
 #include <std_msgs/String.h>
 #include <std_msgs/Empty.h>
 #include <std_msgs/UInt8MultiArray.h>
-#include <ackermann_msgs/AckermannDriveStamped.h>
+#include <race/drive_values.h>
+//#include <ackermann_msgs/AckermannDriveStamped.h>
 #include <string>
 #include <stdlib.h>
 #include <cstdlib>
@@ -22,24 +23,24 @@ unsigned char steer_0 = 0x00;
 unsigned char steer_1 = 0x00;
 unsigned char front_break = 0x01;
 
-void ackermannCallback(const ackermann_msgs::AckermannDriveStamped::ConstPtr& msg){
+void controlCallback(const race::drive_values::ConstPtr& msg){
 	unsigned int steer_total = 0;
 	unsigned int speed_total = 0;
-	speed_total = msg->drive.speed*10;
-	cout << "steer: " << msg->drive.steering_angle << " speed: " << msg->drive.speed << endl;
-	if(msg->drive.speed < 255 && msg->drive.speed > 0){
+	speed_total = msg->throttle*10;
+	cout << "steer: " << msg->steering << " speed: " << msg->throttle << endl;
+	if(msg->throttle < 255 && msg->throttle > 0){
 		gear = 0x00;
 		speed_1 = speed_total;
 		speed_0 = 0x00;
 		front_break = 0;
 	}
-	else if(msg->drive.speed > -255 && msg->drive.speed < 0){
+	else if(msg->throttle > -255 && msg->throttle < 0){
 		gear = 0x02;
 		speed_1 = -speed_total;
 		speed_0 = 0x00;
 		front_break = 0;
 	}
-	else if(msg->drive.speed == 0){
+	else if(msg->throttle == 0){
 		speed_0 = 0x00;
 		speed_1 = 0x00;
 		front_break = 200;
@@ -50,7 +51,7 @@ void ackermannCallback(const ackermann_msgs::AckermannDriveStamped::ConstPtr& ms
 		speed_1 = 0x00;
 		front_break = 200;
 	}
-	steer_total = msg->drive.steering_angle * 71.0;
+	steer_total = (msg->steering-100) * 28 / 100 * 71.0;
 	steer_0 = steer_total >> 8;
 	steer_1 = steer_total & 0xff;
 }
@@ -58,10 +59,10 @@ int main (int argc, char** argv){
 	unsigned int steer_total = 0;
 	unsigned char str[14] = {0x53,0x54,0x58,0x01,0x00,0x00,speed_0, speed_1 ,steer_0,steer_1,front_break,alive,0x0D,0x0A};
 
-	ros::init(argc, argv, "serial_example_node");
+	ros::init(argc, argv, "serial_node");
 	ros::NodeHandle nh;
 
-	ros::Subscriber sub = nh.subscribe("ackermann", 10, ackermannCallback);
+	ros::Subscriber sub = nh.subscribe("Control", 10, controlCallback);
 
 	try{
 		ser.setPort("/dev/ttyUSB0");
