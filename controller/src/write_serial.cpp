@@ -24,7 +24,7 @@ unsigned char steer_1 = 0x00;
 unsigned char front_break = 0x01;
 
 void controlCallback(const race::drive_values::ConstPtr& msg){
-	unsigned int steer_total = 0;
+	int steer_total = 0;
 	unsigned int speed_total = 0;
 	//speed_total = msg->throttle*10;
 	speed_total = 0;
