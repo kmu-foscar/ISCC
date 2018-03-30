@@ -27,7 +27,7 @@ void controlCallback(const race::drive_values::ConstPtr& msg){
 	unsigned int steer_total = 0;
 	unsigned int speed_total = 0;
 	speed_total = msg->throttle*10;
-	cout << "steer: " << msg->steering << " speed: " << msg->throttle << endl;
+	
 	if(msg->throttle < 255 && msg->throttle > 0){
 		gear = 0x00;
 		speed_1 = speed_total;
@@ -52,6 +52,7 @@ void controlCallback(const race::drive_values::ConstPtr& msg){
 		front_break = 200;
 	}
 	steer_total = (msg->steering-100) * 28 / 100 * 71.0;
+	cout << "steer : " << steer_total << ", speed : " << speed_total << endl;
 	steer_0 = steer_total >> 8;
 	steer_1 = steer_total & 0xff;
 }
