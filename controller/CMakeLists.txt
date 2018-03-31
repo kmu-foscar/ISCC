@@ -22,7 +22,8 @@ catkin_package(
   CATKIN_DEPENDS
     serial
     std_msgs
-	message_runtime
+    message_runtime
+    race
   DEPENDS 
     Boost
 )
