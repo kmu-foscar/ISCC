@@ -4,7 +4,7 @@
 #include <race/drive_values.h>
 #include <race/control_variables.h>
 
-#define CENTER_POINT 640
+#define CENTER_POINT 690
 
 Lane_Detector* ld;
 race::drive_values control_msg;
@@ -64,5 +64,5 @@ void generate_control_msg(race::drive_values* control_msg) {
     printf("steering : %d\n", steering);
     steering += 100;
     control_msg->steering = steering;
-    control_msg->throttle = 0;
+    control_msg->throttle = 5;
 }

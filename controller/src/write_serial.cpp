@@ -26,8 +26,7 @@ unsigned char front_break = 0x01;
 void controlCallback(const race::drive_values::ConstPtr& msg){
 	int steer_total = 0;
 	unsigned int speed_total = 0;
-	//speed_total = msg->throttle*10;
-	speed_total = 0;
+	speed_total = msg->throttle*10;
 	if(msg->throttle < 255 && msg->throttle > 0){
 		gear = 0x00;
 		speed_1 = speed_total;
