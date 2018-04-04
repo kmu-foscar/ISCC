@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
   geometry_msgs
   cv_bridge
+  obstacle_detector
   OpenCV REQUIRED
   tf
 )
@@ -74,7 +75,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate added messages and services with any dependencies listed here
  generate_messages(
    DEPENDENCIES
-   sensor_msgs# std_msgs drive_values
+   sensor_msgs std_msgs #drive_values
  )
 
 ################################################
@@ -108,9 +109,9 @@ find_package(catkin REQUIRED COMPONENTS
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
    INCLUDE_DIRS include
-#  LIBRARIES race
-  CATKIN_DEPENDS roscpp rospy sensor_msgs std_msgs geometry_msgs message_runtime
-#  DEPENDS system_lib
+   LIBRARIES race
+   CATKIN_DEPENDS roscpp rospy sensor_msgs std_msgs geometry_msgs message_runtime obstacle_detector
+   #DEPENDS system_lib
 )
 
 ###########
@@ -137,6 +138,7 @@ add_library(race
 
 ## Declare a C++ executable
 add_executable(race_node src/main.cpp)
+add_executable(obstacle_avoider_node src/controller_lidar.cpp)
 # add_executable(odom_scan_matcher src/getOdomFromMatcher.cpp)
 # add_executable(hectorOdom src/hectorOdom.cpp)
 # add_executable(amclOdom src/amclOdom.cpp)
@@ -150,6 +152,9 @@ add_executable(race_node src/main.cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(race_node
+   ${OpenCV_LIBS} ${catkin_LIBRARIES}
+)
+target_link_libraries(obstacle_avoider_node
    ${OpenCV_LIBS} ${catkin_LIBRARIES}
 )
 # target_link_libraries(hectorOdom
