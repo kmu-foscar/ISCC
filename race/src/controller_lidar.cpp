@@ -78,11 +78,11 @@ void calculator(const obstacle_detector::Obstacles data) {
 }
 
 int main(int argc, char* argv[]) {
-	ros::init(argc, argv, "PID_Contoller_node");
+	ros::init(argc, argv, "Obstacle_Avoider_node");
 	ros::NodeHandle nh;
 	
 	ros::Subscriber sub = nh.subscribe("raw_obstacles", 1, calculator);
-	pub = nh.advertise<race::drive_values> ("Controller", 100);
+	pub = nh.advertise<race::drive_values> ("Control", 100);
 	ros::spin();
 
 }

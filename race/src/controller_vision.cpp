@@ -16,7 +16,7 @@ void testerCallback(const race::control_variables &msg);
 void generate_control_msg(race::drive_values* control_msg);
 
 int main(int argc, char** argv) {
-    ros::init(argc, argv, "Controller");
+    ros::init(argc, argv, "Lane_Keeper");
     ros::NodeHandle nh;
     ld = new Lane_Detector();
     sub = nh.subscribe("control_variables", 1000, testerCallback);
