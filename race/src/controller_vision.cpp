@@ -3,7 +3,7 @@
 #include <ros/ros.h>
 #include <race/drive_values.h>
 #include <race/control_variables.h>
-
+#include <signal.h>
 #define CENTER_POINT 690
 
 Lane_Detector* ld;
@@ -19,11 +19,12 @@ void generate_control_msg(race::drive_values* control_msg);
 int main(int argc, char** argv) {
     ros::init(argc, argv, "Lane_Keeper");
     ros::NodeHandle nh;
+    
     ld = new Lane_Detector();
     sub = nh.subscribe("control_variables", 1000, testerCallback);
     control_pub = nh.advertise<race::drive_values>("Control", 1000);
     ld->init();
-    while(true) {
+    while(ros::ok()) {
         ld->operate();
         generate_control_msg(&control_msg);
         control_pub.publish(control_msg);
