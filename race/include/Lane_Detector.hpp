@@ -185,10 +185,18 @@ void Lane_Detector::operate(){
 
 void Lane_Detector::v_roi(Mat& img, Mat& img_ROI, const Point& p1, const Point& p2){
 
-  Point a = Point(p1.x - 30, p1.y);
-  Point b = Point(p1.x + 30, p1.y);
-  Point c = Point(p2.x + 30, p2.y);
-  Point d = Point(p2.x - 30, p2.y);
+  //Point a = Point(p1.x - 30, p1.y);
+  //Point b = Point(p1.x + 30, p1.y);
+  //Point c = Point(p2.x + 30, p2.y);
+  //Point d = Point(p2.x - 30, p2.y);
+
+  float nv = (-1.0f) / get_slope(p1, p2);
+  float alpha = (30.0f) / (float) sqrt(1 + nv * nv);
+
+  Point a(p1.x - alpha, p1.y + alpha * nv);
+  Point b(p1.x + alpha, p1.y - alpha * nv);
+  Point c(p2.x + alpha, p2.y - alpha * nv);
+  Point d(p2.x - alpha, p2.y + alpha * nv);
 
   vector <Point> Left_Point;
 
