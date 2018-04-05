@@ -12,6 +12,7 @@ ros::Subscriber sub;
 ros::Publisher control_pub;
 float p_steering = -0.3f;
 float p_steering_curve = 100.f;
+int test_speed = 5;
 void testerCallback(const race::control_variables &msg);
 void generate_control_msg(race::drive_values* control_msg);
 
@@ -35,6 +36,7 @@ int main(int argc, char** argv) {
 void testerCallback(const race::control_variables &msg) {
     p_steering = msg.p_steering;
 	p_steering_curve = msg.p_steering_curve;
+    test_speed = msg.test_speed;
 }
 void generate_control_msg(race::drive_values* control_msg) {
     int steering;
@@ -64,5 +66,5 @@ void generate_control_msg(race::drive_values* control_msg) {
     printf("steering : %d\n", steering);
     steering += 100;
     control_msg->steering = steering;
-    control_msg->throttle = 5;
+    control_msg->throttle = test_speed;
 }
