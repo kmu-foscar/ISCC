@@ -127,9 +127,9 @@ include_directories(include
 )
 
 ## Declare a C++ library
-add_library(race
-   src/main.cpp 
-)
+#add_library(race
+#   src/main.cpp 
+#)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
