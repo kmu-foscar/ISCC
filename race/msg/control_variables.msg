@@ -1,2 +1,3 @@
 float32 p_steering
 float32 p_steering_curve
+int32 test_speed
