@@ -32,6 +32,7 @@ import serial
 import string
 import math
 import sys
+import binascii
 
 #from time import time
 from sensor_msgs.msg import Imu
@@ -136,7 +137,7 @@ gyro_average_offset_z = rospy.get_param('~gyro_average_offset_z', 0.0)
 # Check your COM port and baud rate
 rospy.loginfo("Opening %s...", port)
 try:
-    ser = serial.Serial(port=port, baudrate=57600, timeout=1)
+    ser = serial.Serial(port=port, baudrate=115200, timeout=1)
 except serial.serialutil.SerialException:
     rospy.logerr("IMU not found at port "+port + ". Did you specify the correct port in the launch file?")
     #exit
@@ -152,16 +153,21 @@ rospy.sleep(5) # Sleep for 5 seconds to wait for the board to boot
 
 ### configure board ###
 #stop datastream
-ser.write('#o0' + chr(13))
+# ser.write('#o0' + chr(13))
+
+# ex = ser.read()
+# rospy.loginfo(binascii.hexlify(ex))
 
 #discard old input
 #automatic flush - NOT WORKING
 #ser.flushInput()  #discard old input, still in invalid format
-#flush manually, as above command is not working
-discard = ser.readlines() 
+#flush manually, as above command is not workings
+discard = ser.readline()
+# for x in range(0, 3):
+#     discard = ser.readline()
 
 #set output mode
-ser.write('#ox' + chr(13)) # To start display angle and sensor reading in text
+# ser.write('#ox' + chr(13)) # To start display angle and sensor reading in text
 
 rospy.loginfo("Writing calibration values to razor IMU board...")
 #set calibration values
@@ -199,15 +205,17 @@ ser.write('#cgz' + str(gyro_average_offset_z) + chr(13))
 
 #print calibration values for verification by user
 ser.flushInput()
-ser.write('#p' + chr(13))
-calib_data = ser.readlines()
+# ser.write('#p' + chr(13))
+calib_data = ser.readline()
+# for x in range(0, 3):
+    # calib_data = ser.readline()
 calib_data_print = "Printing set calibration values:\r\n"
 for line in calib_data:
-    calib_data_print += line
+    calib_data_print = line
 rospy.loginfo(calib_data_print)
 
 #start datastream
-ser.write('#o1' + chr(13))
+# ser.write('#o1' + chr(13))
 
 #automatic flush - NOT WORKING
 #ser.flushInput()  #discard old input, still in invalid format
@@ -222,10 +230,14 @@ while not rospy.is_shutdown():
     line = ser.readline()
     line = line.replace("#YPRAG=","")   # Delete "#YPRAG="
     #f.write(line)                     # Write to the output log file
-    words = string.split(line,",")    # Fields split
+    words = string.split(line[1:-1],",")    # Fields split
     if len(words) > 2:
         #in AHRS firmware z axis points down, in ROS z axis points up (see REP 103)
-        yaw_deg = -float(words[0])
+        roll = float(words[0])*degrees2rad
+
+        pitch = -float(words[1])*degrees2rad
+
+        yaw_deg = -float(words[2])
         yaw_deg = yaw_deg + imu_yaw_calibration
         if yaw_deg > 180.0:
             yaw_deg = yaw_deg - 360.0
@@ -233,8 +245,6 @@ while not rospy.is_shutdown():
             yaw_deg = yaw_deg + 360.0
         yaw = yaw_deg*degrees2rad
         #in AHRS firmware y axis points right, in ROS y axis points left (see REP 103)
-        pitch = -float(words[1])*degrees2rad
-        roll = float(words[2])*degrees2rad
 
         # Publish message
         # AHRS firmware accelerations are negated
@@ -243,13 +253,17 @@ while not rospy.is_shutdown():
         imuMsg.linear_acceleration.y = float(words[4]) * accel_factor
         imuMsg.linear_acceleration.z = float(words[5]) * accel_factor
 
-        imuMsg.angular_velocity.x = float(words[6])
-        #in AHRS firmware y axis points right, in ROS y axis points left (see REP 103)
-        imuMsg.angular_velocity.y = -float(words[7])
-        #in AHRS firmware z axis points down, in ROS z axis points up (see REP 103) 
-        imuMsg.angular_velocity.z = -float(words[8])
+        rospy.loginfo(str(words[0]) + " " + str(words[1]) + " " + str(words[2]) + " " + str(words[3]) + " " + str(words[4]) + " " + str(words[5]))
 
-    q = quaternion_from_euler(roll,pitch,yaw)
+        # rospy.loginfo(str(roll) + " " + str(pitch) + " " + str(yaw) + " " + str(imuMsg.linear_acceleration.x) + " " + str(imuMsg.linear_acceleration.y) + " " + str(imuMsg.linear_acceleration.z))
+
+        # imuMsg.angular_velocity.x = float(words[6])
+        #in AHRS firmware y axis points right, in ROS y axis points left (see REP 103)
+        # imuMsg.angular_velocity.y = -float(words[7])
+        #in AHRS firmware z axis points down, in ROS z axis points up (see REP 103) 
+        # imuMsg.angular_velocity.z = -float(words[8])
+
+    q = quaternion_from_euler(roll,pitch,yaw)   
     imuMsg.orientation.x = q[0]
     imuMsg.orientation.y = q[1]
     imuMsg.orientation.z = q[2]
