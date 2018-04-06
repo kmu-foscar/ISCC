@@ -3,17 +3,21 @@
 #include <ros/ros.h>
 #include <race/drive_values.h>
 #include <race/control_variables.h>
+#include <std_msgs/Bool.h>
 #include <signal.h>
 #define CENTER_POINT 690
 
 Lane_Detector* ld;
 race::drive_values control_msg;
 ros::Subscriber sub; 
+ros::Subscriber sub2; 
 ros::Publisher control_pub;
 float p_steering = -0.3f;
 float p_steering_curve = 100.f;
 int test_speed = 5;
+bool onoff = true;
 void testerCallback(const race::control_variables &msg);
+void onoffCallback(const std_msgs::Bool &msg);
 void generate_control_msg(race::drive_values* control_msg);
 
 int main(int argc, char** argv) {
@@ -22,12 +26,15 @@ int main(int argc, char** argv) {
     
     ld = new Lane_Detector();
     sub = nh.subscribe("control_variables", 1000, testerCallback);
+    sub2 = nh.subscribe("lk_onoff", 1, onoffCallback);
     control_pub = nh.advertise<race::drive_values>("Control", 1000);
     ld->init();
     while(ros::ok()) {
-        ld->operate();
-        generate_control_msg(&control_msg);
-        control_pub.publish(control_msg);
+        if(onoff) {
+            ld->operate();
+            generate_control_msg(&control_msg);
+            control_pub.publish(control_msg);
+        }
         ros::spinOnce();
     }
     delete ld;
@@ -38,6 +45,9 @@ void testerCallback(const race::control_variables &msg) {
     p_steering = msg.p_steering;
 	p_steering_curve = msg.p_steering_curve;
     test_speed = msg.test_speed;
+}
+void onoffCallback(const std_msgs::Bool &msg) {
+    onoff = msg.data;
 }
 void generate_control_msg(race::drive_values* control_msg) {
     int steering;
