@@ -14,5 +14,4 @@ int main(int argc, char** argv)
 {
     ros::init(argc, argv, "Central_Controller");
     ros::NodeHandle nh;
-    system("rosnode kill race_node");
 }
