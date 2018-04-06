@@ -127,9 +127,9 @@ include_directories(include
 )
 
 ## Declare a C++ library
-add_library(race
-   src/main.cpp 
-)
+#add_library(race
+#   src/main.cpp 
+#)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -137,7 +137,8 @@ add_library(race
 # add_dependencies(race ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a C++ executable
-add_executable(race_node src/main.cpp)
+add_executable(main_node src/main.cpp)
+add_executable(race_node src/controller_vision.cpp)
 add_executable(obstacle_avoider_node src/controller_lidar.cpp)
 # add_executable(odom_scan_matcher src/getOdomFromMatcher.cpp)
 # add_executable(hectorOdom src/hectorOdom.cpp)
