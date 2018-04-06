@@ -152,6 +152,9 @@ add_executable(obstacle_avoider_node src/controller_lidar.cpp)
 
 
 ## Specify libraries to link a library or executable target against
+target_link_libraries(main_node
+   ${OpenCV_LIBS} ${catkin_LIBRARIES}
+)
 target_link_libraries(race_node
    ${OpenCV_LIBS} ${catkin_LIBRARIES}
 )
