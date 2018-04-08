@@ -155,16 +155,11 @@ rospy.sleep(5) # Sleep for 5 seconds to wait for the board to boot
 #stop datastream
 # ser.write('#o0' + chr(13))
 
-# ex = ser.read()
-# rospy.loginfo(binascii.hexlify(ex))
-
 #discard old input
 #automatic flush - NOT WORKING
 #ser.flushInput()  #discard old input, still in invalid format
 #flush manually, as above command is not workings
 discard = ser.readline()
-# for x in range(0, 3):
-#     discard = ser.readline()
 
 #set output mode
 # ser.write('#ox' + chr(13)) # To start display angle and sensor reading in text
@@ -207,8 +202,6 @@ ser.write('#cgz' + str(gyro_average_offset_z) + chr(13))
 ser.flushInput()
 # ser.write('#p' + chr(13))
 calib_data = ser.readline()
-# for x in range(0, 3):
-    # calib_data = ser.readline()
 calib_data_print = "Printing set calibration values:\r\n"
 for line in calib_data:
     calib_data_print = line
@@ -254,14 +247,6 @@ while not rospy.is_shutdown():
         imuMsg.linear_acceleration.z = float(words[5]) * accel_factor
 
         rospy.loginfo(str(words[0]) + " " + str(words[1]) + " " + str(words[2]) + " " + str(words[3]) + " " + str(words[4]) + " " + str(words[5]))
-
-        # rospy.loginfo(str(roll) + " " + str(pitch) + " " + str(yaw) + " " + str(imuMsg.linear_acceleration.x) + " " + str(imuMsg.linear_acceleration.y) + " " + str(imuMsg.linear_acceleration.z))
-
-        # imuMsg.angular_velocity.x = float(words[6])
-        #in AHRS firmware y axis points right, in ROS y axis points left (see REP 103)
-        # imuMsg.angular_velocity.y = -float(words[7])
-        #in AHRS firmware z axis points down, in ROS z axis points up (see REP 103) 
-        # imuMsg.angular_velocity.z = -float(words[8])
 
     q = quaternion_from_euler(roll,pitch,yaw)   
     imuMsg.orientation.x = q[0]
