@@ -1,7 +1,6 @@
 <!-- Demonstation of obstacle detector -->
 <launch>
-  <param name="use_sim_time" value="true"/>  
-  <node name="scans_demo" pkg="rosbag" type="play" output="screen" args="--clock --loop $(find obstacle_detector)/resources/scans_demo_3.bag"/>
+  <node name="connect_to_urg_node" pkg="urg_node" type="urg_node" args="_ip_address:=192.168.2.11"/>
   <node name="laser_to_map" pkg="tf2_ros" type="static_transform_publisher" args="0 0 0 0 0 0 laser map"/>
   <node name="map_to_scanner_base" pkg="tf2_ros" type="static_transform_publisher" args="0 0 0 0 0 0 map robot"/>
 
