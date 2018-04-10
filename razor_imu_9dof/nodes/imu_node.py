@@ -260,10 +260,10 @@ while not rospy.is_shutdown():
         # imuMsg.angular_velocity.x = float(words[6])
         #in AHRS firmware y axis points right, in ROS y axis points left (see REP 103)
         # imuMsg.angular_velocity.y = -float(words[7])
-        #in AHRS firmware z axis points down, in ROS z axis points up (see REP 103) 
+        #in AHRS firmware z axis points down, in ROS z axis points up (see REP 103)
         # imuMsg.angular_velocity.z = -float(words[8])
 
-    q = quaternion_from_euler(roll,pitch,yaw)   
+    q = quaternion_from_euler(roll,pitch,yaw)
     imuMsg.orientation.x = q[0]
     imuMsg.orientation.y = q[1]
     imuMsg.orientation.z = q[2]
@@ -292,6 +292,6 @@ while not rospy.is_shutdown():
         diag_msg.values.append(KeyValue('sequence number', str(seq)))
         diag_arr.status.append(diag_msg)
         diag_pub.publish(diag_arr)
-        
+
 ser.close
 #f.close
