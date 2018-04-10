@@ -3,6 +3,8 @@ project(razor_imu_9dof)
 
 find_package(catkin REQUIRED COMPONENTS dynamic_reconfigure)
 
+include_directories(include ${catkin_INCLUDE_DIRS})
+
 generate_dynamic_reconfigure_options(cfg/imu.cfg)
 
 catkin_package(DEPENDS CATKIN DEPENDS dynamic_reconfigure)
@@ -26,6 +28,8 @@ install(DIRECTORY src
 install(DIRECTORY magnetometer_calibration
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
+
+include_directories(include ${catkin_INCLUDE_DIRS})
 
 catkin_install_python(PROGRAMS 
 	nodes/imu_node.py
