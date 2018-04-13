@@ -11,13 +11,13 @@ using namespace std;
 
 /* 제어 상수 */
 #define K_FD 5 // Foward distance 상수
-#define K_DG 50  // Difference of Gradient 상수
+#define K_DG 40  // Difference of Gradient 상수
 #define K_V 0.5 // velocity 상수
 
 
 #define DETECT_RANGE 0.55 
 
-#define MAX_DISTANCE 5	// FOWARD DISTANCE의 최대 탐지 거리
+#define MAX_DISTANCE 0.5	// FOWARD DISTANCE의 최대 탐지 거리
 
 ros::Publisher pub;
 
@@ -50,7 +50,7 @@ void calculator(const obstacle_detector::Obstacles data) {
 
 	if(data.circles.size() == 0) return;
 
-	double distanceR = distance_from_car(data.circles[0].center, 	c);
+	double distanceR = distance_from_car(data.circles[0].center, c);
 	double distanceL = distance_from_car(data.circles[data.circles.size()-1].center, c);	
 	double distanceF = sqrt(pow(front.x - c.x, 2) + pow(front.y - c.y, 2));
 	double error_distance = (distanceR - distanceL);
@@ -89,5 +89,6 @@ int main(int argc, char* argv[]) {
 	ros::spin();
 
 }
+
 
 

@@ -1,6 +1,6 @@
 <!-- Demonstation of obstacle detector -->
 <launch>
-  <node name="connect_to_urg_node" pkg="urg_node" type="urg_node" args="_ip_address:=192.168.2.11 _angle_min:=-1.57 _angle_max:=1.57"/>
+  <node name="connect_to_urg_node" pkg="urg_node" type="urg_node" args="_ip_address:=192.168.2.11 _angle_min:=-1.57 _angle_max:=1.57 "/>
   <node name="laser_to_map" pkg="tf2_ros" type="static_transform_publisher" args="0 0 0 0 0 0 laser map"/>
   <node name="map_to_scanner_base" pkg="tf2_ros" type="static_transform_publisher" args="0 0 0 0 0 0 map robot"/>
 
@@ -15,13 +15,13 @@
 
     <param name="ranges_num"        value="1000"/>
 
-    <param name="min_scanner_range" value="0.05"/>
-    <param name="max_scanner_range" value="10.0"/>
+    <param name="min_scanner_range" value="0"/>
+    <param name="max_scanner_range" value="0.5"/>
 
-    <param name="min_x_range"       value="-3.0"/>
-    <param name="max_x_range"       value="3.0"/>
-    <param name="min_y_range"       value="-3.0"/>
-    <param name="max_y_range"       value="3.0"/>
+    <param name="min_x_range"       value="-0.5"/>
+    <param name="max_x_range"       value="0.5"/>
+    <param name="min_y_range"       value="-0.5"/>
+    <param name="max_y_range"       value="0.5"/>
 
     <param name="fixed_frame_id"    value="map"/>
     <param name="target_frame_id"   value="robot"/>
@@ -41,7 +41,7 @@
 
     <param name="max_group_distance"   value="0.1"/>
     <param name="distance_proportion"  value="0.00628"/>
-    <param name="max_split_distance"   value="0.2"/>
+    <param name="max_split_distance"   value="0.1"/>
     <param name="max_merge_separation" value="0.2"/>
     <param name="max_merge_spread"     value="0.2"/>
     <param name="max_circle_radius"    value="0.06"/>
@@ -64,19 +64,6 @@
     <param name="frame_id"                value="map"/>
 
     <remap from="tracked_obstacles" to="obstacles"/>
-  </node>
-
-  <node name="obstacle_publisher" pkg="nodelet" type="nodelet" args="load obstacle_detector/ObstaclePublisher nodelet_manager">
-    <param name="active"           value="false"/>
-    <param name="reset"            value="false"/>
-
-    <param name="fusion_example"   value="false"/>
-    <param name="fission_example"  value="false"/>
-
-    <param name="loop_rate"        value="10.0"/>
-    <param name="radius_margin"    value="0.25"/>
-
-    <param name="frame_id"         value="map"/>
   </node>
 
   <node name="rviz" pkg="rviz" type="rviz" output="screen" args="-d $(find obstacle_detector)/resources/obstacle_detector.rviz"/>
