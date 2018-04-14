@@ -15,15 +15,11 @@
 #define O_LIMIT_POW O_LIMIT * O_LIMIT
 #define PI 3.141592
 #define MAX 12345
-#define K_L 1.1
-#define K_R 1.6
+#define K_L 1.3
+#define K_R 1.3
 
 ros::Publisher pub;
 race::drive_values msg;
-// 
-// 앞이 y
-// 왼쪽이 -x, +x
-//
 
 //점들 사이 거리
 double ObstacleDistanceSquare(geometry_msgs::Point &p1, geometry_msgs::Point &p2)
@@ -66,14 +62,14 @@ void FindClosestPointLR(obstacle_detector::Obstacles &data, bool find[],
         double dist = ObstacleDistanceSquare(car, curPoint);
         
         //오른쪽 PI/2 보다 크면 원래 왼쪽구역이지만, x축이 +,- 뒤집혀 있기 때문에 오른쪽구역이다.
-        if(angle > (PI / 2.0)){
+        if(angle > PI / 2.0){
             if(minimumR > dist) {
                 minimumR = dist;
                 closestRightPoint = curPoint;
             }
         }
         //왼쪽
-        if(angle < (PI / 2.0)){ 
+        else{ 
             if(minimumL > dist){
                 minimumL = dist;
                 closestLeftPoint = curPoint;
@@ -112,7 +108,7 @@ void FindClosestPointLR(obstacle_detector::Obstacles &data, bool find[],
             continue;
         
         //오른쪽 PI/2 보다 크면 원래 왼쪽구역이지만, x축이 +,- 뒤집혀 있기 때문에 오른쪽구역이다.
-        if(angle > (PI / 2.0)){
+        if(angle > PI / 2.0){
             double dist = ObstacleDistanceSquare(pr1, curPoint);
         
             if(minimumR > dist && dist) {
@@ -121,7 +117,7 @@ void FindClosestPointLR(obstacle_detector::Obstacles &data, bool find[],
             }
         }
         //왼쪽
-        if(angle < (PI / 2.0)){ 
+        else{ 
             double dist = ObstacleDistanceSquare(pl1, curPoint);
         
             if(minimumL > dist && dist){
