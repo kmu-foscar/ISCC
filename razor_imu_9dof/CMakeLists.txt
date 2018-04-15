@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(razor_imu_9dof)
 
-find_package(catkin REQUIRED roscpp COMPONENTS dynamic_reconfigure)
+find_package(catkin REQUIRED roscpp message_generation sensor_msgs COMPONENTS dynamic_reconfigure)
 
 generate_dynamic_reconfigure_options(cfg/imu.cfg)
 

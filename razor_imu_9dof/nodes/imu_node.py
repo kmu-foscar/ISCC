@@ -253,15 +253,24 @@ while not rospy.is_shutdown():
         imuMsg.linear_acceleration.y = float(words[4]) * accel_factor
         imuMsg.linear_acceleration.z = float(words[5]) * accel_factor
 
+        imuMsg.linear_acceleration.x = float(words[3])
+        imuMsg.linear_acceleration.y = float(words[4])
+        imuMsg.linear_acceleration.z = float(words[5])
+
         rospy.loginfo(str(words[0]) + " " + str(words[1]) + " " + str(words[2]) + " " + str(words[3]) + " " + str(words[4]) + " " + str(words[5]))
 
-        # rospy.loginfo(str(roll) + " " + str(pitch) + " " + str(yaw) + " " + str(imuMsg.linear_acceleration.x) + " " + str(imuMsg.linear_acceleration.y) + " " + str(imuMsg.linear_acceleration.z))
+        #rospy.loginfo(str(roll) + " " + str(pitch) + " " + str(yaw) + " " + str(imuMsg.linear_acceleration.x) + " " + str(imuMsg.linear_acceleration.y) + " " + str(imuMsg.linear_acceleration.z))
 
-        # imuMsg.angular_velocity.x = float(words[6])
+        #imuMsg.angular_velocity.x = float(words[6])
+        imuMsg.angular_velocity.x = float(words[0])
+
         #in AHRS firmware y axis points right, in ROS y axis points left (see REP 103)
-        # imuMsg.angular_velocity.y = -float(words[7])
+        #imuMsg.angular_velocity.y = -float(words[7])
+        imuMsg.angular_velocity.y = float(words[1])
+
         #in AHRS firmware z axis points down, in ROS z axis points up (see REP 103)
-        # imuMsg.angular_velocity.z = -float(words[8])
+        #imuMsg.angular_velocity.z = -float(words[8])
+        imuMsg.angular_velocity.z = float(words[2])
 
     q = quaternion_from_euler(roll,pitch,yaw)
     imuMsg.orientation.x = q[0]
