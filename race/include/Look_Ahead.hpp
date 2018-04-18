@@ -33,7 +33,7 @@ private :
     Mat grayImg, otsu, sobelX_Img, sobelY_Img, sobel_Img1, sobel_Img2,
         imageROI1, imageROI2, bluredImg, blured1, blured2, mask, openingImg1, openingImg2,
         cannyImg1, cannyImg2, houghImg1, houghImg2;
-    void v_roi(Mat& img, Mat& imgrmrjt_ROI, const Point& p1, const Point& p2);
+    void v_roi(Mat& img, Mat& img_ROI, const Point& p1, const Point& p2);
     void region_of_interest_L(Mat& img, Mat& img_ROI);
     void region_of_interest_R(Mat& img, Mat& img_ROI);
     bool hough_left(Mat& img, Point* p1, Point* p2);
