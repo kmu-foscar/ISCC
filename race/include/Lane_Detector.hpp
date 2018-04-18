@@ -370,7 +370,7 @@ bool Lane_Detector::hough_right(Mat& img, Point* p1, Point* p2){
   Point point2;
 
   int count = 0, x1 = 0, x2 = 0, y1 = 0, y2 = 0;
-  int threshold = 30;
+  int threshold = 60;
 
   for (int i = 10; i > 0; i--){
     HoughLines(img, linesR, 1, CV_PI / 180, threshold, 0, 0, CV_PI/2, CV_PI);
