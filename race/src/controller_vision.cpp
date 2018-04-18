@@ -96,10 +96,10 @@ float cal_lookahead_op_error() {
         error_op = CENTER_POINT_LA - op.x;
     }
     else if(ld->is_left_error()) {
-        error_op = CENTER_POINT_LA - p_lookahead_curve / ld->get_right_slope;
+        error_op = CENTER_POINT_LA - p_lookahead_curve / la->get_right_slope();
     }
     else if(ld->is_right_error()) {
-        error_op = CENTER_POINT_LA + p_lookahead_curve / lod->get_left_slope;
+        error_op = CENTER_POINT_LA + p_lookahead_curve / la->get_left_slope();
     }
     else {
         error_op = 0;
