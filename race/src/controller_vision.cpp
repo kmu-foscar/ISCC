@@ -1,4 +1,5 @@
 #include "Lane_Detector.hpp"
+#include "Look_Ahead.hpp"
 #include <algorithm>
 #include <ros/ros.h>
 #include <race/drive_values.h>
@@ -7,6 +8,7 @@
 #define CENTER_POINT 690
 #define DEFAULT_SPEED 12
 Lane_Detector* ld;
+Look_Ahead* la;
 race::drive_values control_msg;
 ros::Subscriber sub; 
 ros::Publisher control_pub;
@@ -23,16 +25,20 @@ int main(int argc, char** argv) {
     ros::NodeHandle nh;
     
     ld = new Lane_Detector();
+    la = new Look_Ahead();
     sub = nh.subscribe("control_variables", 1000, testerCallback);
     control_pub = nh.advertise<race::drive_values>("Control", 1000);
     ld->init();
+    la->init();
     while(ros::ok()) {
         ld->operate();
+        la->operate();
         generate_control_msg(&control_msg);
         control_pub.publish(control_msg);
         ros::spinOnce();
     }
     delete ld;
+    delete la;
     return 0;
 }
 
