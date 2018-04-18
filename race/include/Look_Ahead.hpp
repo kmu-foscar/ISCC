@@ -17,9 +17,6 @@
 using namespace cv;
 using namespace std;
 
-const CvScalar COLOR_BLUE = CvScalar(255, 0, 0);
-const CvScalar COLOR_RED = CvScalar(0, 0, 255);
-
 class Look_Ahead {
 private :
     float left_slope;
@@ -140,8 +137,8 @@ void Look_Ahead::operate(){
     left_error = hough_left(sobel_Img1, &p1, &p2);
     right_error = hough_right(sobel_Img2, &p3, &p4);
 
-    line(originImg_left, p1, p2, COLOR_RED, 4, CV_AA);
-    line(originImg_right, p3, p4, COLOR_RED, 4, CV_AA);
+    line(originImg_left, p1, p2, CvScalar(0, 0, 255), 4, CV_AA);
+    line(originImg_right, p3, p4, CvScalar(0, 0, 255), 4, CV_AA);
 
     cout << p1.x << " " << p1.y << " " << p2.x << " " << p2.y << endl;
 
