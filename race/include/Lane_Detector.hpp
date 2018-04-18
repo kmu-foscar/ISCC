@@ -156,11 +156,11 @@ void Lane_Detector::operate(){
 
     left_error = hough_left(sobel_Img1, &p1, &p2);
     right_error = hough_right(sobel_Img2, &p3, &p4);
-    
+
     circle(originImg_left, Point(640, 480), 20, COLOR_BLUE, 5);
     circle(originImg_right, Point(0, 480), 20, COLOR_BLUE, 5);
 
-    circle(originImg_left, Point(left_length, 480), 20, COLOR_BLUE, 5);
+    circle(originImg_left, Point(640 - left_length, 480), 20, COLOR_BLUE, 5);
     circle(originImg_right, Point(right_length, 480), 20, COLOR_BLUE, 5);
 
     line(originImg_left, p1, p2, COLOR_RED, 4, CV_AA);
@@ -190,13 +190,14 @@ void Lane_Detector::v_roi(Mat& img, Mat& img_ROI, const Point& p1, const Point& 
   //Point c = Point(p2.x + 30, p2.y);
   //Point d = Point(p2.x - 30, p2.y);
 
-  float nv = (-1.0f) / get_slope(p1, p2);
-  float alpha = (30.0f) / (float) sqrt(1 + nv * nv);
+  float slope = get_slope(p1, p2);
+  float alphaY = 50.f / sqrt(slope*slope + 1);
+  float alphaX = slope * alphaY;
 
-  Point a(p1.x - alpha, p1.y + alpha * nv);
-  Point b(p1.x + alpha, p1.y - alpha * nv);
-  Point c(p2.x + alpha, p2.y - alpha * nv);
-  Point d(p2.x - alpha, p2.y + alpha * nv);
+  Point a(p1.x - alphaX, p1.y + alphaY );
+  Point b(p1.x + alphaX, p1.y - alphaY );
+  Point c(p2.x + alphaX, p2.y - alphaY );
+  Point d(p2.x - alphaX, p2.y + alphaY );
 
   vector <Point> Left_Point;
 
@@ -369,7 +370,7 @@ bool Lane_Detector::hough_right(Mat& img, Point* p1, Point* p2){
   Point point2;
 
   int count = 0, x1 = 0, x2 = 0, y1 = 0, y2 = 0;
-  int threshold = 30;
+  int threshold = 60;
 
   for (int i = 10; i > 0; i--){
     HoughLines(img, linesR, 1, CV_PI / 180, threshold, 0, 0, CV_PI/2, CV_PI);
