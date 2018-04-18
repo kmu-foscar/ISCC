@@ -5,7 +5,7 @@
 #include <race/control_variables.h>
 #include <signal.h>
 #define CENTER_POINT 690
-
+#define DEFAULT_SPEED 12
 Lane_Detector* ld;
 race::drive_values control_msg;
 ros::Subscriber sub; 
@@ -13,6 +13,8 @@ ros::Publisher control_pub;
 float p_steering = -0.3f;
 float p_steering_curve = 100.f;
 int test_speed = 5;
+int speed = DEFAULT_SPEED;
+bool onoff = true;
 void testerCallback(const race::control_variables &msg);
 void generate_control_msg(race::drive_values* control_msg);
 
@@ -52,13 +54,13 @@ void generate_control_msg(race::drive_values* control_msg) {
 
     if(ld->get_intersectpoint(pa_1, pa_2, pb_1, pb_2, &op)) {
         float error_steering = CENTER_POINT - op.x;
-        steering = p_steering * error_steering; 
+        steering = p_steering * error_steering * (1/speed) * 5; 
     } 
     else if(ld->is_left_error()) {
-        steering = -p_steering_curve * ld->get_right_slope();
+        steering = -p_steering_curve * ld->get_right_slope() * (1/speed) * 5;
     }
     else if(ld->is_right_error()) {
-        steering = p_steering_curve * ld->get_left_slope();
+        steering = p_steering_curve * ld->get_left_slope() * (1/speed) * 5;
     }
     else {
         steering = 0;
