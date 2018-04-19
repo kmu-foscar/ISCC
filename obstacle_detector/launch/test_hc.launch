@@ -1,0 +1,38 @@
+<!-- Demonstation of obstacle detector -->
+<launch>
+  <node name="connect_to_urg_node" pkg="urg_node" type="urg_node" args="_ip_address:=192.168.2.11 _angle_min:=-1.57 _angle_max:=1.57"/>
+  <!-- <node name="laser_to_map" pkg="tf2_ros" type="static_transform_publisher" args="0 0 0 0 0 0 laser map"/> -->
+  <!-- <node name="map_to_scanner_base" pkg="tf2_ros" type="static_transform_publisher" args="0 0 0 0 0 0  map robot"/> -->
+
+
+
+  <node name="obstacle_extractor" pkg="obstacle_detector" type="obstacle_extractor_node" args="">
+    <param name="active"               value="true"/>
+    <param name="use_scan"             value="true"/>
+    <param name="use_pcl"              value="false"/>
+
+    <param name="use_split_and_merge"    value="true"/>
+    <param name="circles_from_visibles"  value="true"/>
+    <param name="discard_converted_segments" value="true"/>
+    <param name="transform_coordinates"  value="true"/>
+
+    <param name="min_group_points"     value="4"/>
+
+    <param name="max_group_distance"   value="0.1"/>
+    <param name="distance_proportion"  value="0.00628"/>
+    <param name="max_split_distance"   value="0.1"/>
+    <param name="max_merge_separation" value="0.05"/>
+    <param name="max_merge_spread"     value="0.05"/>
+    <param name="max_circle_radius"    value="0.1"/>
+    <param name="radius_enlargement"   value="0.01"/>
+    <param name="min_x_limit"       value="-1.3"/>
+    <param name="max_x_limit"       value="1.3"/>
+    <param name="min_y_limit"       value="-1.3"/>
+    <param name="max_y_limit"       value="1.3"/>
+    <param name="frame_id"             value="laser"/>
+  </node>
+
+  <node name="rviz" pkg="rviz" type="rviz" output="screen" args="-d $(find obstacle_detector)/resources/obstacle_detector.rviz"/>
+
+</launch>
+<!-- -->

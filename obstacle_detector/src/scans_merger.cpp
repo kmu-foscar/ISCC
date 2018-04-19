@@ -83,10 +83,10 @@ bool ScansMerger::updateParams(std_srvs::Empty::Request &req, std_srvs::Empty::R
   nh_local_.param<double>("min_scanner_range", p_min_scanner_range_, 0.05);
   nh_local_.param<double>("max_scanner_range", p_max_scanner_range_, 10.0);
 
-  nh_local_.param<double>("min_x_range", p_min_x_range_, -10.0);
-  nh_local_.param<double>("max_x_range", p_max_x_range_,  10.0);
-  nh_local_.param<double>("min_y_range", p_min_y_range_, -10.0);
-  nh_local_.param<double>("max_y_range", p_max_y_range_,  10.0);
+  nh_local_.param<double>("min_x_range", p_min_x_range_, -0.5);
+  nh_local_.param<double>("max_x_range", p_max_x_range_,  0.5);
+  nh_local_.param<double>("min_y_range", p_min_y_range_, -0.5);
+  nh_local_.param<double>("max_y_range", p_max_y_range_,  0.5);
 
   nh_local_.param<string>("fixed_frame_id", p_fixed_frame_id_, "map");
   nh_local_.param<string>("target_frame_id", p_target_frame_id_, "robot");
