@@ -86,7 +86,7 @@ float Look_Ahead::get_right_slope() {
 }
 
 void Look_Ahead::init(){
-  capture = VideoCapture(1);
+  capture = VideoCapture(3);
 
   mask = getStructuringElement(MORPH_RECT, Size(3, 3), Point(1, 1));
 
