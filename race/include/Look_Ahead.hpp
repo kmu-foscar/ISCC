@@ -86,8 +86,10 @@ float Look_Ahead::get_right_slope() {
 }
 
 void Look_Ahead::init(){
-  capture = VideoCapture(3);
+  const string gst = "nvcamerasrc ! video/x-raw(memory:NVMM), width=(int)1280, height=(int)720,format=(string)I420, framerate=(fraction)24/1 ! nvvidconv flip-method=2 ! video/x-raw, format=(string)BGRx ! videoconvert ! 'video/x-raw, format=(string)BGR' ! appsink";
 
+  //capture = VideoCapture("nvcamerasrc ! 'video/x-raw(memory:NVMM), width=1920, height=1280, framerate=30/1, format=NV12' ! nvvidconv flip-method=2 ! nvegltransform ! nveglglessink -e");
+  capture = VideoCapture(gst);
   mask = getStructuringElement(MORPH_RECT, Size(3, 3), Point(1, 1));
 
   left_error = false;
