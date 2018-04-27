@@ -10,35 +10,25 @@
 #include <race/drive_values.h>
 #include <string>
 
-ros::Publisher pub;
-race::drive_values msg;
-int cnt = 0;
-
-bool isExist(int cnt) {
-  if(cnt > 80) 
-  	return false;
-  return true;
-}
-
 void detect_obstacle(const obstacle_detector::Obstacles data) {
   
   bool exist_obstacle;
   int size = data.circles.size();
+  string message;
 
-  size > 0? exist_obstacle = true : exist_obstacle = false;
-
+  size>0?exist_obstacle = true:exist_obstacle = false;
+ 
+  race::drive_values msg;
+  
   if(exist_obstacle) {
-   	printf("%s\n" , "stop!!");
-	cnt = 0;
+    message="detect obstacle -> stop!!";
     msg.throttle = 0;
   }
-  else cnt++;
-	
-  if(!isExist(cnt)) {
-	cnt = 0;
-    printf("%s\n" , "go!!");
+  else {
+    message="no obstacle -> go!!";
     msg.throttle = 1;
-  }
+  }	
+  printf("%s\n", message);
   pub.publish(msg);
 }
 

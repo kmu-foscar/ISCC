@@ -6,6 +6,7 @@
 #include <ctime>
 #include <queue>
 #include <cv.h>
+#include <cv_bridge/cv_bridge.h>
 #include <unistd.h>
 #include <highgui.h>
 #include "opencv2/opencv.hpp"
@@ -91,14 +92,9 @@ float Lane_Detector::get_right_slope() {
 }
 
 void Lane_Detector::init(){
-  capture_left = VideoCapture();
-  capture_right = VideoCapture();
-  capture_left.set(CV_CAP_PROP_FRAME_WIDTH, 4);
-  capture_left.set(CV_CAP_PROP_FRAME_HEIGHT, 3);
-  capture_right.set(CV_CAP_PROP_FRAME_WIDTH, 4);
-  capture_right.set(CV_CAP_PROP_FRAME_HEIGHT, 3);
-  //capture_left.open(2);
-  //capture_right.open(3);
+  capture_left = VideoCapture(3);
+  capture_right = VideoCapture(1);
+
   mask = getStructuringElement(MORPH_RECT, Size(3, 3), Point(1, 1));
 
   left_error = false;
@@ -178,8 +174,8 @@ void Lane_Detector::operate(){
 	Mat a;
 	Mat b;
 
-	resize(originImg_left, a, Size(320, 240), 0, 0, CV_INTER_LINEAR);
-	resize(originImg_right, b, Size(320, 240), 0, 0, CV_INTER_LINEAR);
+	resize(originImg_left, a, Size(640, 480), 0, 0, CV_INTER_LINEAR);
+	resize(originImg_right, b, Size(640, 480), 0, 0, CV_INTER_LINEAR);
     imshow("Left", a);
     imshow("Right", b);
     if(waitKey(10) == 0){
