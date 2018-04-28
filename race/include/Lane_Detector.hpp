@@ -250,7 +250,7 @@ void Lane_Detector::region_of_interest_L(Mat& img, Mat& img_ROI){
   Left_Point.push_back(a);
   Left_Point.push_back(b);
   Left_Point.push_back(c);
-  Left_Point.push_back(d);
+  // Left_Point.push_back(d);
 
 
   Mat roi(img.rows, img.cols, CV_8U, Scalar(0));
@@ -276,7 +276,7 @@ void Lane_Detector::region_of_interest_R(Mat& img, Mat& img_ROI){
   Left_Point.push_back(a);
   Left_Point.push_back(b);
   Left_Point.push_back(c);
-  Left_Point.push_back(d);
+  // Left_Point.push_back(d);
 
 
   Mat roi(img.rows, img.cols, CV_8U, Scalar(0));
