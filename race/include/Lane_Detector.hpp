@@ -40,7 +40,7 @@ private :
     Mat originImg_right;
     bool left_error;
     bool right_error;
-    Mat grayImg1, grayImg2, otsu, sobelX_Img, sobelY_Img, sobel_Img1, sobel_Img2,
+    Mat grayImg1, grayImg2, otsu, filterImg1, filterImg2, sobelX_Img, sobelY_Img, sobel_Img1, sobel_Img2,
         imageROI1, imageROI2, blured1, blured2, mask, openingImg1, openingImg2,
         cannyImg1, cannyImg2, houghImg1, houghImg2;
     void v_roi(Mat& img, Mat& img_ROI, const Point& p1, const Point& p2);
@@ -155,11 +155,19 @@ void Lane_Detector::operate(){
     //imshow("sobelX_Img", blured1);
     //imshow("sobelX_Img1", blured2);
 
-    Canny(originImg_left, cannyImg1, 300, 350);
-    Canny(originImg_right, cannyImg2, 300, 350);
+		Mat Img_copy_L = originImg_left(Rect(0, originImg_left.rows/8 * 1, originImg_left.cols, originImg_left.rows/8 * 7));
+		Mat Img_copy_R = originImg_right(Rect(0, originImg_left.rows/8 * 1, originImg_left.cols, originImg_left.rows/8 * 7));
 
-	imshow("sex", cannyImg1);
-	imshow("sex1", cannyImg2);
+		GaussianBlur(Img_copy_L, filterImg1, Size(9, 9), 0);
+		GaussianBlur(Img_copy_R, filterImg2, Size(9, 9), 0);
+
+
+    Canny(filterImg1, cannyImg1, 200, 300);
+    Canny(filterImg2, cannyImg2, 200, 300);
+
+		imshow("canny1", cannyImg1);
+		imshow("canny2", cannyImg2);
+
     if(!left_error){
       //v_roi(blured1, imageROI1, p1, p2);
       v_roi(cannyImg1, imageROI1, p1, p2);
@@ -199,28 +207,24 @@ void Lane_Detector::operate(){
     //right_error = hough_right(sobel_Img2, &p3, &p4);
     left_error = hough_left(cannyImg1, &p1, &p2);
     right_error = hough_right(cannyImg2, &p3, &p4);
-    circle(originImg_left, Point(640, 480), 20, COLOR_BLUE, 5);
-    circle(originImg_right, Point(0, 480), 20, COLOR_BLUE, 5);
 
-    circle(originImg_left, Point(640 - left_length, 480), 20, COLOR_BLUE, 5);
-    circle(originImg_right, Point(right_length, 480), 20, COLOR_BLUE, 5);
-
-    line(originImg_left, p1, p2, COLOR_RED, 4, CV_AA);
-    line(originImg_right, p3, p4, COLOR_RED, 4, CV_AA);
+    line(Img_copy_L, p1, p2, COLOR_RED, 4, CV_AA);
+    line(Img_copy_R, p3, p4, COLOR_RED, 4, CV_AA);
 
     cout << p1.x << " " << p1.y << " " << p2.x << " " << p2.y << endl;
 
     left_slope = get_slope(p1, p2);
     right_slope = get_slope(p3, p4);
     position(p1, p3);
-	Mat a;
-	Mat b;
-	Mat c;
-	resize(originImg_left, a, Size(640, 480), 0, 0, CV_INTER_LINEAR);
-	resize(originImg_right, b, Size(640, 480), 0, 0, CV_INTER_LINEAR);
-	hconcat(a, b, c);
+		Mat a;
+		Mat b;
+		Mat c;
+		resize(Img_copy_L, a, Size(640, 480), 0, 0, CV_INTER_LINEAR);
+		resize(Img_copy_R, b, Size(640, 480), 0, 0, CV_INTER_LINEAR);
+		hconcat(a, b, c);
+
     imshow("result", c);
-    output_video << c;
+    // output_video << c;
     if(waitKey(10) == 0){
       return;
     }
@@ -265,16 +269,16 @@ void Lane_Detector::v_roi(Mat& img, Mat& img_ROI, const Point& p1, const Point& 
 
 void Lane_Detector::region_of_interest_L(Mat& img, Mat& img_ROI){
   Point a = Point(0, 0);
-  Point b = Point(img.cols, 0);
-  Point c = Point(0, img.rows);
-  // Point d = Point(0, img.rows);
+  Point b = Point(0, img.rows);
+  Point c = Point(img.cols, img.rows/2);
+  Point d = Point(img.cols, 0);
 
   vector <Point> Left_Point;
 
   Left_Point.push_back(a);
   Left_Point.push_back(b);
   Left_Point.push_back(c);
-  // Left_Point.push_back(d);
+  Left_Point.push_back(d);
 
 
   Mat roi(img.rows, img.cols, CV_8U, Scalar(0));
@@ -290,17 +294,17 @@ void Lane_Detector::region_of_interest_L(Mat& img, Mat& img_ROI){
 }
 
 void Lane_Detector::region_of_interest_R(Mat& img, Mat& img_ROI){
-  Point a = Point(img.cols, img.rows);
-  Point b = Point(img.cols, 0);
-  Point c = Point(0, 0);
-  // Point d = Point(0, img.rows);
+	Point a = Point(0, 0);
+	Point b = Point(0, img.rows/2);
+	Point c = Point(img.cols, img.rows);
+	Point d = Point(img.cols, 0);
 
   vector <Point> Left_Point;
 
   Left_Point.push_back(a);
   Left_Point.push_back(b);
   Left_Point.push_back(c);
-  // Left_Point.push_back(d);
+  Left_Point.push_back(d);
 
 
   Mat roi(img.rows, img.cols, CV_8U, Scalar(0));
