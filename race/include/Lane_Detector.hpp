@@ -119,8 +119,27 @@ void Lane_Detector::operate(){
     cvtColor(originImg_left, grayImg1, COLOR_BGR2GRAY);
     cvtColor(originImg_right, grayImg2, COLOR_BGR2GRAY);
 
-    threshold(grayImg1, blured1, 200, 255, THRESH_BINARY );
-    threshold(grayImg2, blured2, 200, 255, THRESH_BINARY );
+    // threshold(grayImg1, blured1, 200, 255, THRESH_BINARY );
+    // threshold(grayImg2, blured2, 200, 255, THRESH_BINARY );
+
+    Sobel(grayImg1, sobelX_Img, CV_8U, 1, 0);
+    Sobel(grayImg1, sobelY_Img, CV_8U, 0, 1);
+    sobel_Img1 = abs(sobelX_Img) + abs(sobelY_Img);
+
+    imshow("dddd2", sobel_Img1);
+
+    threshold(sobel_Img1, blured1, 100, 255, THRESH_BINARY );
+
+
+    Sobel(grayImg2, sobelX_Img, CV_8U, 1, 0);
+    Sobel(grayImg2, sobelY_Img, CV_8U, 0, 1);
+    sobel_Img2 = abs(sobelX_Img) + abs(sobelY_Img);
+
+    threshold(sobel_Img2, blured2, 100, 255, THRESH_BINARY );
+
+
+    imshow("sobelX_Img", blured1);
+    imshow("sobelX_Img1", blured2);
 
 
     if(!left_error){
@@ -136,19 +155,19 @@ void Lane_Detector::operate(){
       region_of_interest_R(blured2, imageROI2);
     }
 
-    morphologyEx(imageROI1, openingImg1, MORPH_OPEN, mask);
-    morphologyEx(imageROI2, openingImg2, MORPH_OPEN, mask);
-
-    Sobel(openingImg1, sobelX_Img, CV_8U, 1, 0);
-    Sobel(openingImg1, sobelY_Img, CV_8U, 0, 1);
-    sobel_Img1 = abs(sobelX_Img) + abs(sobelY_Img);
-
-    Sobel(openingImg2, sobelX_Img, CV_8U, 1, 0);
-    Sobel(openingImg2, sobelY_Img, CV_8U, 0, 1);
-    sobel_Img2 = abs(sobelX_Img) + abs(sobelY_Img);
-
-    Canny(grayImg1, cannyImg1, 150, 300);
-    Canny(grayImg2, cannyImg2, 150, 300);
+    // morphologyEx(imageROI1, openingImg1, MORPH_OPEN, mask);
+    // morphologyEx(imageROI2, openingImg2, MORPH_OPEN, mask);
+    //
+    // Sobel(openingImg1, sobelX_Img, CV_8U, 1, 0);
+    // Sobel(openingImg1, sobelY_Img, CV_8U, 0, 1);
+    // sobel_Img1 = abs(sobelX_Img) + abs(sobelY_Img);
+    //
+    // Sobel(openingImg2, sobelX_Img, CV_8U, 1, 0);
+    // Sobel(openingImg2, sobelY_Img, CV_8U, 0, 1);
+    // sobel_Img2 = abs(sobelX_Img) + abs(sobelY_Img);
+    //
+    // Canny(grayImg1, cannyImg1, 150, 300);
+    // Canny(grayImg2, cannyImg2, 150, 300);
 
     //
     // imshow("canny", cannyImg1);
@@ -191,7 +210,7 @@ void Lane_Detector::v_roi(Mat& img, Mat& img_ROI, const Point& p1, const Point& 
   //Point d = Point(p2.x - 30, p2.y);
 
   float slope = get_slope(p1, p2);
-  float alphaY = 50.f / sqrt(slope*slope + 1);
+  float alphaY = 40.f / sqrt(slope*slope + 1);
   float alphaX = slope * alphaY;
 
   Point a(p1.x - alphaX, p1.y + alphaY );
@@ -221,10 +240,10 @@ void Lane_Detector::v_roi(Mat& img, Mat& img_ROI, const Point& p1, const Point& 
 
 
 void Lane_Detector::region_of_interest_L(Mat& img, Mat& img_ROI){
-  Point a = Point(0, img.rows/2);
+  Point a = Point(0, 0);
   Point b = Point(img.cols, 0);
-  Point c = Point(img.cols, img.rows);
-  Point d = Point(0, img.rows);
+  Point c = Point(0, img.rows);
+  // Point d = Point(0, img.rows);
 
   vector <Point> Left_Point;
 
@@ -248,9 +267,9 @@ void Lane_Detector::region_of_interest_L(Mat& img, Mat& img_ROI){
 
 void Lane_Detector::region_of_interest_R(Mat& img, Mat& img_ROI){
   Point a = Point(img.cols, img.rows);
-  Point b = Point(img.cols, img.rows/2);
+  Point b = Point(img.cols, 0);
   Point c = Point(0, 0);
-  Point d = Point(0, img.rows);
+  // Point d = Point(0, img.rows);
 
   vector <Point> Left_Point;
 
