@@ -4,7 +4,7 @@ project(race)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-set (OpenCV_DIR /home/hwancheol/opencv/opencv-3.3.1/build)
+set (OpenCV_DIR /usr/local/share/OpenCV/)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy

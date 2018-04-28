@@ -79,8 +79,8 @@ bool ObstacleExtractor::updateParams(std_srvs::Empty::Request &req, std_srvs::Em
   bool prev_active = p_active_;
 
   nh_local_.param<bool>("active", p_active_, true);
-  nh_local_.param<bool>("use_scan", p_use_scan_, false);
-  nh_local_.param<bool>("use_pcl", p_use_pcl_, true);
+  nh_local_.param<bool>("use_scan", p_use_scan_, true);
+  nh_local_.param<bool>("use_pcl", p_use_pcl_, false);
 
   nh_local_.param<bool>("use_split_and_merge", p_use_split_and_merge_, true);
   nh_local_.param<bool>("circles_from_visibles", p_circles_from_visibles_, true);
@@ -94,20 +94,21 @@ bool ObstacleExtractor::updateParams(std_srvs::Empty::Request &req, std_srvs::Em
   nh_local_.param<double>("max_split_distance", p_max_split_distance_, 0.2);
   nh_local_.param<double>("max_merge_separation", p_max_merge_separation_, 0.2);
   nh_local_.param<double>("max_merge_spread", p_max_merge_spread_, 0.2);
-  nh_local_.param<double>("max_circle_radius", p_max_circle_radius_, 0.6);
-  nh_local_.param<double>("radius_enlargement", p_radius_enlargement_, 0.25);
+  nh_local_.param<double>("max_circle_radius", p_max_circle_radius_, 0.06);
+  nh_local_.param<double>("radius_enlargement", p_radius_enlargement_, 0.01);
 
-  nh_local_.param<double>("min_x_limit", p_min_x_limit_, -10.0);
-  nh_local_.param<double>("max_x_limit", p_max_x_limit_,  10.0);
-  nh_local_.param<double>("min_y_limit", p_min_y_limit_, -10.0);
-  nh_local_.param<double>("max_y_limit", p_max_y_limit_,  10.0);
+  nh_local_.param<double>("min_x_limit", p_min_x_limit_, -1.0);
+  nh_local_.param<double>("max_x_limit", p_max_x_limit_,  1.0);
+  nh_local_.param<double>("min_y_limit", p_min_y_limit_, -1.0);
+  nh_local_.param<double>("max_y_limit", p_max_y_limit_,  1.0);
 
-  nh_local_.param<string>("frame_id", p_frame_id_, "map");
-
+  nh_local_.param<string>("frame_id", p_frame_id_, "laser");
   if (p_active_ != prev_active) {
     if (p_active_) {
-      if (p_use_scan_)
+	   printf("p_active\n");
+      if (p_use_scan_){
         scan_sub_ = nh_.subscribe("scan", 10, &ObstacleExtractor::scanCallback, this);
+	  }
       else if (p_use_pcl_)
         pcl_sub_ = nh_.subscribe("pcl", 10, &ObstacleExtractor::pclCallback, this);
 
@@ -141,7 +142,6 @@ void ObstacleExtractor::scanCallback(const sensor_msgs::LaserScan::ConstPtr scan
 
     phi += scan_msg->angle_increment;
   }
-
   processPoints();
 }
 
