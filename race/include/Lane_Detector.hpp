@@ -13,13 +13,19 @@
 #include "opencv2/objdetect.hpp"
 #include "opencv2/highgui.hpp"
 #include "opencv2/imgproc.hpp"
-
-
+#include <string.h>
+#include <sys/time.h>
 using namespace cv;
 using namespace std;
 
 const CvScalar COLOR_BLUE = CvScalar(255, 0, 0);
 const CvScalar COLOR_RED = CvScalar(0, 0, 255);
+
+string to_string(int n) {
+	stringstream s;
+	s << n;
+	return s.str();
+}
 
 class Lane_Detector {
 private :
@@ -29,6 +35,7 @@ private :
     float right_length;
     VideoCapture capture_left;
     VideoCapture capture_right;
+    VideoWriter output_video;
     Mat originImg_left;
     Mat originImg_right;
     bool left_error;
@@ -92,9 +99,16 @@ float Lane_Detector::get_right_slope() {
 }
 
 void Lane_Detector::init(){
-  capture_left = VideoCapture(3);
-  capture_right = VideoCapture(1);
+  string path = "/home/nvidia/ISCC_Videos/";
+  struct tm* datetime;
+  time_t t;
+  t = time(NULL);
+  datetime = localtime(&t);
+  string s_t = path.append(to_string(datetime->tm_year + 1900)).append("-").append(to_string(datetime->tm_mon + 1)).append("-").append(to_string(datetime->tm_mday)).append("_").append(to_string(datetime->tm_hour)).append(":").append(to_string(datetime->tm_min)).append(":").append(to_string(datetime->tm_sec)).append(".avi");
 
+  capture_left = VideoCapture(2);
+  capture_right = VideoCapture(1);
+  output_video.open(s_t, VideoWriter::fourcc('X', 'V', 'I', 'D'), 20, Size(1280, 480), true);
   mask = getStructuringElement(MORPH_RECT, Size(3, 3), Point(1, 1));
 
   left_error = false;
@@ -116,43 +130,51 @@ void Lane_Detector::operate(){
       return;
     }
 
-    cvtColor(originImg_left, grayImg1, COLOR_BGR2GRAY);
-    cvtColor(originImg_right, grayImg2, COLOR_BGR2GRAY);
+   // cvtColor(originImg_left, grayImg1, COLOR_BGR2GRAY);
+    //cvtColor(originImg_right, grayImg2, COLOR_BGR2GRAY);
 
     // threshold(grayImg1, blured1, 200, 255, THRESH_BINARY );
     // threshold(grayImg2, blured2, 200, 255, THRESH_BINARY );
 
-    Sobel(grayImg1, sobelX_Img, CV_8U, 1, 0);
-    Sobel(grayImg1, sobelY_Img, CV_8U, 0, 1);
-    sobel_Img1 = abs(sobelX_Img) + abs(sobelY_Img);
+    //Sobel(grayImg1, sobelX_Img, CV_8U, 1, 0);
+    //Sobel(grayImg1, sobelY_Img, CV_8U, 0, 1);
+    //sobel_Img1 = abs(sobelX_Img) + abs(sobelY_Img);
 
-    imshow("dddd2", sobel_Img1);
+    //imshow("dddd2", sobel_Img1);
 
-    threshold(sobel_Img1, blured1, 100, 255, THRESH_BINARY );
-
-
-    Sobel(grayImg2, sobelX_Img, CV_8U, 1, 0);
-    Sobel(grayImg2, sobelY_Img, CV_8U, 0, 1);
-    sobel_Img2 = abs(sobelX_Img) + abs(sobelY_Img);
-
-    threshold(sobel_Img2, blured2, 100, 255, THRESH_BINARY );
+    //threshold(sobel_Img1, blured1, 100, 255, THRESH_BINARY );
 
 
-    imshow("sobelX_Img", blured1);
-    imshow("sobelX_Img1", blured2);
+    //Sobel(grayImg2, sobelX_Img, CV_8U, 1, 0);
+    //Sobel(grayImg2, sobelY_Img, CV_8U, 0, 1);
+    //sobel_Img2 = abs(sobelX_Img) + abs(sobelY_Img);
+
+    //threshold(sobel_Img2, blured2, 100, 255, THRESH_BINARY );
 
 
+    //imshow("sobelX_Img", blured1);
+    //imshow("sobelX_Img1", blured2);
+
+    Canny(originImg_left, cannyImg1, 300, 350);
+    Canny(originImg_right, cannyImg2, 300, 350);
+
+	imshow("sex", cannyImg1);
+	imshow("sex1", cannyImg2);
     if(!left_error){
-      v_roi(blured1, imageROI1, p1, p2);
+      //v_roi(blured1, imageROI1, p1, p2);
+      v_roi(cannyImg1, imageROI1, p1, p2);
     }
     else{
-      region_of_interest_L(blured1, imageROI1);
+      //region_of_interest_L(blured1, imageROI1);
+      region_of_interest_L(cannyImg1, imageROI1);
     }
     if(!right_error){
-      v_roi(blured2, imageROI2, p3, p4);
+      //v_roi(blured2, imageROI2, p3, p4);
+      v_roi(cannyImg2, imageROI2, p3, p4);
     }
     else{
-      region_of_interest_R(blured2, imageROI2);
+      //region_of_interest_R(blured2, imageROI2);
+      region_of_interest_R(cannyImg2, imageROI2);
     }
 
     // morphologyEx(imageROI1, openingImg1, MORPH_OPEN, mask);
@@ -173,9 +195,10 @@ void Lane_Detector::operate(){
     // imshow("canny", cannyImg1);
     // imshow("canny1", cannyImg2);
 
-    left_error = hough_left(sobel_Img1, &p1, &p2);
-    right_error = hough_right(sobel_Img2, &p3, &p4);
-
+    //left_error = hough_left(sobel_Img1, &p1, &p2);
+    //right_error = hough_right(sobel_Img2, &p3, &p4);
+    left_error = hough_left(cannyImg1, &p1, &p2);
+    right_error = hough_right(cannyImg2, &p3, &p4);
     circle(originImg_left, Point(640, 480), 20, COLOR_BLUE, 5);
     circle(originImg_right, Point(0, 480), 20, COLOR_BLUE, 5);
 
@@ -192,11 +215,12 @@ void Lane_Detector::operate(){
     position(p1, p3);
 	Mat a;
 	Mat b;
-
+	Mat c;
 	resize(originImg_left, a, Size(640, 480), 0, 0, CV_INTER_LINEAR);
 	resize(originImg_right, b, Size(640, 480), 0, 0, CV_INTER_LINEAR);
-    imshow("Left", a);
-    imshow("Right", b);
+	hconcat(a, b, c);
+    imshow("result", c);
+    output_video << c;
     if(waitKey(10) == 0){
       return;
     }
