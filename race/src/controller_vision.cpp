@@ -16,6 +16,8 @@ ros::Publisher control_pub;
 float p_steering = -0.3f;
 float p_steering_curve = 20.f;
 float p_lookahead_curve = 10.f;
+int steering;
+int throttle;
 int test_speed = 5;
 int speed = MAX_SPEED;
 bool onoff = true;
@@ -50,8 +52,6 @@ void testerCallback(const race::control_variables &msg) {
     test_speed = msg.test_speed;
 }
 void generate_control_msg(race::drive_values* control_msg) {
-    int steering;
-    int throttle;
     float op_error;
     Point op;
     Point pa_1 = ld->p1;
@@ -71,9 +71,6 @@ void generate_control_msg(race::drive_values* control_msg) {
     }
     else if(ld->is_right_error()) {
         steering = p_steering_curve / ld->get_left_slope() * (float)(1/(float)speed) * 5;
-    }
-    else {
-        steering = 0;
     }
     steering = min(max(steering, -100), 100);
     printf("steering : %d\n", steering);
