@@ -7,7 +7,7 @@
 #include <signal.h>
 #define CENTER_POINT 690
 #define CENTER_POINT_LA 320
-#define MAX_SPEED 12
+#define MAX_SPEED 9
 Lane_Detector* ld;
 Look_Ahead* la;
 race::drive_values control_msg;
@@ -27,20 +27,20 @@ int main(int argc, char** argv) {
     ros::NodeHandle nh;
     
     ld = new Lane_Detector();
-    la = new Look_Ahead();
+    //la = new Look_Ahead();
     sub = nh.subscribe("control_variables", 1000, testerCallback);
     control_pub = nh.advertise<race::drive_values>("Control", 1000);
     ld->init();
-    la->init();
+    //la->init();
     while(ros::ok()) {
         ld->operate();
-        la->operate();
+        //la->operate();
         generate_control_msg(&control_msg);
         control_pub.publish(control_msg);
         ros::spinOnce();
     }
     delete ld;
-    delete la;
+    //delete la;
     return 0;
 }
 
@@ -67,10 +67,10 @@ void generate_control_msg(race::drive_values* control_msg) {
         steering = p_steering * error_steering * (1/speed) * 5; 
     } 
     else if(ld->is_left_error()) {
-        steering = -p_steering_curve / ld->get_right_slope() * (1/speed) * 5;
+        steering = -p_steering_curve / ld->get_right_slope() * (float)(1/(float)speed) * 5;
     }
     else if(ld->is_right_error()) {
-        steering = p_steering_curve / ld->get_left_slope() * (1/speed) * 5;
+        steering = p_steering_curve / ld->get_left_slope() * (float)(1/(float)speed) * 5;
     }
     else {
         steering = 0;
@@ -78,8 +78,8 @@ void generate_control_msg(race::drive_values* control_msg) {
     steering = min(max(steering, -100), 100);
     printf("steering : %d\n", steering);
     steering += 100;
-    op_error = cal_lookahead_op_error();
-    speed = speed - (int)op_error;
+    //op_error = cal_lookahead_op_error();
+    //speed = speed - (int)op_error;
     speed = min(max(speed, 3), MAX_SPEED);
     control_msg->steering = steering;
     control_msg->throttle = speed;
