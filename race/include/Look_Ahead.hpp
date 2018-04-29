@@ -17,6 +17,9 @@
 using namespace cv;
 using namespace std;
 
+const CvScalar COLOR_BLUE = CvScalar(255, 0, 0);
+const CvScalar COLOR_RED = CvScalar(0, 0, 255);
+
 class Look_Ahead {
 private :
     float left_slope;
@@ -27,9 +30,11 @@ private :
     Mat originImg, originImg_left, originImg_right;
     bool left_error;
     bool right_error;
-    Mat grayImg, otsu, sobelX_Img, sobelY_Img, sobel_Img1, sobel_Img2,
+    Mat grayImg, filterImg1, filterImg2, otsu, sobelX_Img, sobelY_Img, sobel_Img1, sobel_Img2,
         imageROI1, imageROI2, bluredImg, blured1, blured2, mask, openingImg1, openingImg2,
         cannyImg1, cannyImg2, houghImg1, houghImg2;
+    VideoWriter outputVideo;
+
     void v_roi(Mat& img, Mat& img_ROI, const Point& p1, const Point& p2);
     void region_of_interest_L(Mat& img, Mat& img_ROI);
     void region_of_interest_R(Mat& img, Mat& img_ROI);
@@ -86,7 +91,8 @@ float Look_Ahead::get_right_slope() {
 }
 
 void Look_Ahead::init(){
-  capture = VideoCapture(3);
+  capture = VideoCapture("/home/hwancheol/Downloads/ISCC_sample_.avi");
+  outputVideo.open("ouput.avi", VideoWriter::fourcc('X', 'V', 'I', 'D'), 30, Size(640, 60), true);
 
   mask = getStructuringElement(MORPH_RECT, Size(3, 3), Point(1, 1));
 
@@ -103,54 +109,55 @@ void Look_Ahead::operate(){
       cerr << "Empty Image" << endl;
       return;
     }
-    originImg_left = originImg(cv::Rect(0, 0, 320, 480));
-    originImg_right = originImg(cv::Rect(320, 0, 320, 480));
-    cvtColor(originImg, grayImg, COLOR_BGR2GRAY);
-    threshold(grayImg, bluredImg, 200, 255, THRESH_BINARY );
-    blured1 = bluredImg(cv::Rect(0, 0, 320, 480));
-    blured2 = bluredImg(cv::Rect(320, 0, 320, 480));
-    
+    //imshow("original", originImg);
+    originImg_left = originImg(Rect(320, 0, 320, 60));
+    originImg_right = originImg(Rect(640, 0, 320, 60));
+    Mat Img_copy_L = originImg_left;
+		Mat Img_copy_R = originImg_right;
+    Mat imgHSV1, imgThresholded1;
+    cvtColor(Img_copy_L, imgHSV1, CV_BGR2HSV);
+    inRange(imgHSV1, Scalar(10, 20, 50), Scalar(30, 200, 255), imgThresholded1); 
+    bitwise_and(Img_copy_L, Img_copy_L, mask = imgThresholded1);
+		GaussianBlur(Img_copy_L, filterImg1, Size(3, 3), 0);
+		GaussianBlur(Img_copy_R, filterImg2, Size(5, 5), 0);
+    Canny(filterImg1, cannyImg1, (filterImg1.rows + filterImg1.cols) / 4, (filterImg1.rows + filterImg1.cols) / 2) ;
+    Canny(filterImg2, cannyImg2, (filterImg2.rows + filterImg2.cols) / 4, (filterImg2.rows + filterImg2.cols) / 2) ;
+		imshow("canny1", cannyImg1);
+		imshow("canny2", cannyImg2);
+
     if(!left_error){
-      v_roi(blured1, imageROI1, p1, p2);
+      v_roi(cannyImg1, imageROI1, p1, p2);
     }
     else{
-      region_of_interest_L(blured1, imageROI1);
+      region_of_interest_L(cannyImg1, imageROI1);
     }
     if(!right_error){
-      v_roi(blured2, imageROI2, p3, p4);
+      v_roi(cannyImg2, imageROI2, p3, p4);
     }
     else{
-      region_of_interest_R(blured2, imageROI2);
+      region_of_interest_R(cannyImg2, imageROI2);
     }
 
-    morphologyEx(imageROI1, openingImg1, MORPH_OPEN, mask);
-    morphologyEx(imageROI2, openingImg2, MORPH_OPEN, mask);
+    left_error = hough_left(cannyImg1, &p1, &p2);
+    right_error = hough_right(cannyImg2, &p3, &p4);
 
-    Sobel(openingImg1, sobelX_Img, CV_8U, 1, 0);
-    Sobel(openingImg1, sobelY_Img, CV_8U, 0, 1);
-    sobel_Img1 = abs(sobelX_Img) + abs(sobelY_Img);
-
-    Sobel(openingImg2, sobelX_Img, CV_8U, 1, 0);
-    Sobel(openingImg2, sobelY_Img, CV_8U, 0, 1);
-    sobel_Img2 = abs(sobelX_Img) + abs(sobelY_Img);
-
-    left_error = hough_left(sobel_Img1, &p1, &p2);
-    right_error = hough_right(sobel_Img2, &p3, &p4);
-
-    line(originImg_left, p1, p2, CvScalar(0, 0, 255), 4, CV_AA);
-    line(originImg_right, p3, p4, CvScalar(0, 0, 255), 4, CV_AA);
+    line(Img_copy_L, p1, p2, COLOR_RED, 4, CV_AA);
+    line(Img_copy_R, p3, p4, COLOR_RED, 4, CV_AA);
 
     cout << p1.x << " " << p1.y << " " << p2.x << " " << p2.y << endl;
 
     left_slope = get_slope(p1, p2);
     right_slope = get_slope(p3, p4);
-    //position(p1, p3);
-	Mat a, b, result;
-	resize(originImg_left, a, Size(160, 240), 0, 0, CV_INTER_LINEAR);
-	resize(originImg_right, b, Size(160, 240), 0, 0, CV_INTER_LINEAR);
-    hconcat(a, b, result);
-    imshow("Result", result);
-    if(waitKey(10) == 27){
+    position(p1, p3);
+		Mat a;
+		Mat b;
+		Mat c;
+		resize(Img_copy_L, a, Size(320, 60), 0, 0, CV_INTER_LINEAR);
+		resize(Img_copy_R, b, Size(320, 60), 0, 0, CV_INTER_LINEAR);
+		hconcat(a, b, c);
+    outputVideo << c;
+    imshow("result", c);
+    if(waitKey(10) == 0){
       return;
     }
 }
