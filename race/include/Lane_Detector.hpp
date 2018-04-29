@@ -21,6 +21,16 @@ using namespace std;
 const CvScalar COLOR_BLUE = CvScalar(255, 0, 0);
 const CvScalar COLOR_RED = CvScalar(0, 0, 255);
 
+const Vec3b RGB_WHITE_LOWER = Vec3b(100, 100, 190);
+const Vec3b RGB_WHITE_UPPER = Vec3b(255, 255, 255);
+const Vec3b RGB_YELLOW_LOWER = Vec3b(225, 180, 0);
+const Vec3b RGB_YELLOW_UPPER = Vec3b(255, 255, 170);
+const Vec3b HSV_YELLOW_LOWER = Vec3b(10, 20, 130);
+const Vec3b HSV_YELLOW_UPPER = Vec3b(30, 140, 255);
+
+const Vec3b HLS_YELLOW_LOWER = Vec3b(20, 120, 80);
+const Vec3b HLS_YELLOW_UPPER = Vec3b(45, 200, 255);
+
 string to_string(int n) {
 	stringstream s;
 	s << n;
@@ -33,16 +43,21 @@ private :
     float right_slope;
     float left_length;
     float right_length;
+
     VideoCapture capture_left;
     VideoCapture capture_right;
     VideoWriter output_video;
+
     Mat originImg_left;
     Mat originImg_right;
+
     bool left_error;
     bool right_error;
-    Mat grayImg1, grayImg2, otsu, filterImg1, filterImg2, sobelX_Img, sobelY_Img, sobel_Img1, sobel_Img2,
-        imageROI1, imageROI2, blured1, blured2, mask, openingImg1, openingImg2,
-        cannyImg1, cannyImg2, houghImg1, houghImg2;
+
+		Mat img_hsv, filterImg1, filterImg2, binaryImg1, binaryImg2,
+				imageROI1, imageROI2, blured1, blured2, mask, openingImg1, openingImg2,
+				cannyImg1, cannyImg2, houghImg1, houghImg2;
+
     void v_roi(Mat& img, Mat& img_ROI, const Point& p1, const Point& p2);
     void region_of_interest_L(Mat& img, Mat& img_ROI);
     void region_of_interest_R(Mat& img, Mat& img_ROI);
@@ -118,140 +133,109 @@ void Lane_Detector::init(){
 }
 
 void Lane_Detector::operate(){
-    capture_left >> originImg_left;
-    capture_right >> originImg_right;
+	capture_left >> originImg_left;
+	capture_right >> originImg_right;
 
-    if (originImg_left.empty()){
-      cerr << "Empty Left Image" << endl;
-      return;
-    }
-    if (originImg_right.empty()){
-      cerr << "Empty right Image" << endl;
-      return;
-    }
+	if (originImg_left.empty()){
+		cerr << "Empty Left Image" << endl;
+		return;
+	}
 
-   // cvtColor(originImg_left, grayImg1, COLOR_BGR2GRAY);
-    //cvtColor(originImg_right, grayImg2, COLOR_BGR2GRAY);
-
-    // threshold(grayImg1, blured1, 200, 255, THRESH_BINARY );
-    // threshold(grayImg2, blured2, 200, 255, THRESH_BINARY );
-
-    //Sobel(grayImg1, sobelX_Img, CV_8U, 1, 0);
-    //Sobel(grayImg1, sobelY_Img, CV_8U, 0, 1);
-    //sobel_Img1 = abs(sobelX_Img) + abs(sobelY_Img);
-
-    //imshow("dddd2", sobel_Img1);
-
-    //threshold(sobel_Img1, blured1, 100, 255, THRESH_BINARY );
+	if (originImg_right.empty()){
+	  cerr << "Empty right Image" << endl;
+	  return;
+	}
 
 
-    //Sobel(grayImg2, sobelX_Img, CV_8U, 1, 0);
-    //Sobel(grayImg2, sobelY_Img, CV_8U, 0, 1);
-    //sobel_Img2 = abs(sobelX_Img) + abs(sobelY_Img);
+	GaussianBlur(originImg_left, filterImg1, Size(5, 5), 0);
+	GaussianBlur(originImg_right, filterImg2, Size(5, 5), 0);
 
-    //threshold(sobel_Img2, blured2, 100, 255, THRESH_BINARY );
+	cvtColor(filterImg1, img_hsv, COLOR_BGR2HSV);
+
+	imshow("img_hsv", img_hsv);
+
+	inRange(img_hsv, HSV_YELLOW_LOWER, HSV_YELLOW_UPPER, binaryImg1);
+	inRange(originImg_right, RGB_WHITE_LOWER, RGB_WHITE_UPPER, binaryImg2);
+
+	imshow("mask", binaryImg1);
+
+	Canny(binaryImg1, cannyImg1, 130, 270);
+	Canny(filterImg2, cannyImg2, 130, 270);
+
+	imshow("canny1", cannyImg1);
+
+	Mat initORI1;
+	Mat initORI2;
+
+	region_of_interest_L(originImg_left, initORI1);
+	region_of_interest_R(originImg_right, initORI2);
+
+	imshow("initORI1", initORI1);
+	imshow("initORI2", initORI2);
 
 
-    //imshow("sobelX_Img", blured1);
-    //imshow("sobelX_Img1", blured2);
 
-		Mat Img_copy_L = originImg_left(Rect(0, originImg_left.rows/8 * 1, originImg_left.cols, originImg_left.rows/8 * 7));
-		Mat Img_copy_R = originImg_right(Rect(0, originImg_left.rows/8 * 1, originImg_left.cols, originImg_left.rows/8 * 7));
+	if(!left_error){
+		Mat ddd;
+		v_roi(originImg_left, ddd, p1, p2);
+		imshow("v_roi_check", ddd);
+		v_roi(cannyImg1, imageROI1, p1, p2);
+	}
+	else{
+		region_of_interest_L(cannyImg1, imageROI1);
+	}
 
-		GaussianBlur(Img_copy_L, filterImg1, Size(9, 9), 0);
-		GaussianBlur(Img_copy_R, filterImg2, Size(9, 9), 0);
+	if(!right_error){
+		v_roi(cannyImg2, imageROI2, p3, p4);
+	}
+	else{
+		region_of_interest_R(cannyImg2, imageROI2);
+	}
 
+	left_error = hough_left(imageROI1, &p1, &p2);
+	right_error = hough_right(imageROI2, &p3, &p4);
 
-    Canny(filterImg1, cannyImg1, 200, 300);
-    Canny(filterImg2, cannyImg2, 200, 300);
+	line(originImg_left, p1, p2, COLOR_RED, 4, CV_AA);
+	line(originImg_right, p3, p4, COLOR_RED, 4, CV_AA);
 
-		imshow("canny1", cannyImg1);
-		imshow("canny2", cannyImg2);
+	cout << p1.x << " " << p1.y << " " << p2.x << " " << p2.y << endl;
 
-    if(!left_error){
-      //v_roi(blured1, imageROI1, p1, p2);
-      v_roi(cannyImg1, imageROI1, p1, p2);
-    }
-    else{
-      //region_of_interest_L(blured1, imageROI1);
-      region_of_interest_L(cannyImg1, imageROI1);
-    }
-    if(!right_error){
-      //v_roi(blured2, imageROI2, p3, p4);
-      v_roi(cannyImg2, imageROI2, p3, p4);
-    }
-    else{
-      //region_of_interest_R(blured2, imageROI2);
-      region_of_interest_R(cannyImg2, imageROI2);
-    }
+	left_slope = get_slope(p1, p2);
+	right_slope = get_slope(p3, p4);
+	position(p1, p3);
 
-    // morphologyEx(imageROI1, openingImg1, MORPH_OPEN, mask);
-    // morphologyEx(imageROI2, openingImg2, MORPH_OPEN, mask);
-    //
-    // Sobel(openingImg1, sobelX_Img, CV_8U, 1, 0);
-    // Sobel(openingImg1, sobelY_Img, CV_8U, 0, 1);
-    // sobel_Img1 = abs(sobelX_Img) + abs(sobelY_Img);
-    //
-    // Sobel(openingImg2, sobelX_Img, CV_8U, 1, 0);
-    // Sobel(openingImg2, sobelY_Img, CV_8U, 0, 1);
-    // sobel_Img2 = abs(sobelX_Img) + abs(sobelY_Img);
-    //
-    // Canny(grayImg1, cannyImg1, 150, 300);
-    // Canny(grayImg2, cannyImg2, 150, 300);
+	Mat a;
+	Mat b;
+	Mat c;
 
-    //
-    // imshow("canny", cannyImg1);
-    // imshow("canny1", cannyImg2);
+	resize(originImg_left, a, Size(640, 480), 0, 0, CV_INTER_LINEAR);
+	resize(originImg_right, b, Size(640, 480), 0, 0, CV_INTER_LINEAR);
+	hconcat(a, b, c);
 
-    //left_error = hough_left(sobel_Img1, &p1, &p2);
-    //right_error = hough_right(sobel_Img2, &p3, &p4);
-    left_error = hough_left(cannyImg1, &p1, &p2);
-    right_error = hough_right(cannyImg2, &p3, &p4);
+	imshow("result", c);
 
-    line(Img_copy_L, p1, p2, COLOR_RED, 4, CV_AA);
-    line(Img_copy_R, p3, p4, COLOR_RED, 4, CV_AA);
-
-    cout << p1.x << " " << p1.y << " " << p2.x << " " << p2.y << endl;
-
-    left_slope = get_slope(p1, p2);
-    right_slope = get_slope(p3, p4);
-    position(p1, p3);
-		Mat a;
-		Mat b;
-		Mat c;
-		resize(Img_copy_L, a, Size(640, 480), 0, 0, CV_INTER_LINEAR);
-		resize(Img_copy_R, b, Size(640, 480), 0, 0, CV_INTER_LINEAR);
-		hconcat(a, b, c);
-
-    imshow("result", c);
-    // output_video << c;
-    if(waitKey(10) == 0){
-      return;
-    }
+	// output_video << c;
+	if(waitKey(10) == 0){
+		return;
+	}
 }
 
 void Lane_Detector::v_roi(Mat& img, Mat& img_ROI, const Point& p1, const Point& p2){
 
-  //Point a = Point(p1.x - 30, p1.y);
-  //Point b = Point(p1.x + 30, p1.y);
-  //Point c = Point(p2.x + 30, p2.y);
-  //Point d = Point(p2.x - 30, p2.y);
 
   float slope = get_slope(p1, p2);
-  float alphaY = 40.f / sqrt(slope*slope + 1);
+  float alphaY = 50.f / sqrt(slope*slope + 1);
   float alphaX = slope * alphaY;
 
-  Point a(p1.x - alphaX, p1.y + alphaY );
+	Point a(p1.x - alphaX, p1.y + alphaY );
   Point b(p1.x + alphaX, p1.y - alphaY );
-  Point c(p2.x + alphaX, p2.y - alphaY );
-  Point d(p2.x - alphaX, p2.y + alphaY );
+  Point c(p2.x, p2.y);
 
   vector <Point> Left_Point;
 
   Left_Point.push_back(a);
   Left_Point.push_back(b);
   Left_Point.push_back(c);
-  Left_Point.push_back(d);
 
   Mat roi(img.rows, img.cols, CV_8U, Scalar(0));
 
@@ -263,14 +247,13 @@ void Lane_Detector::v_roi(Mat& img, Mat& img_ROI, const Point& p1, const Point& 
 
   img_ROI = filteredImg_Left.clone();
 
-  // imshow("V_ROI", img_ROI);
 }
 
 
 void Lane_Detector::region_of_interest_L(Mat& img, Mat& img_ROI){
   Point a = Point(0, 0);
   Point b = Point(0, img.rows);
-  Point c = Point(img.cols, img.rows/2);
+  Point c = Point(img.cols, img.rows/5);
   Point d = Point(img.cols, 0);
 
   vector <Point> Left_Point;
@@ -290,12 +273,11 @@ void Lane_Detector::region_of_interest_L(Mat& img, Mat& img_ROI){
 
   img_ROI = filteredImg_Left.clone();
 
-  // imshow("Img_ROI", img_ROI);
 }
 
 void Lane_Detector::region_of_interest_R(Mat& img, Mat& img_ROI){
 	Point a = Point(0, 0);
-	Point b = Point(0, img.rows/2);
+	Point b = Point(0, img.rows/5);
 	Point c = Point(img.cols, img.rows);
 	Point d = Point(img.cols, 0);
 
@@ -318,15 +300,15 @@ void Lane_Detector::region_of_interest_R(Mat& img, Mat& img_ROI){
   img_ROI = filteredImg_Left.clone();
 
   Left_Point.push_back(c);
-  // imshow("Img_ROIa", Img_ROI);
 }
 
 float Lane_Detector::get_slope(const Point& p1, const Point& p2){
 
   float slope;
 
-  slope = ((float) p2.y - (float) p1.y) / ((float) p2.x - (float) p1.x);
-
+	if(p2.y - p1.y != 0.0){
+		slope = ((float) p2.y - (float) p1.y) / ((float) p2.x - (float) p1.x);
+	}
   return slope;
 }
 
