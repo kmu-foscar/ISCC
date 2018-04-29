@@ -160,7 +160,7 @@ void Lane_Detector::operate(){
 	imshow("mask", binaryImg1);
 
 	Canny(binaryImg1, cannyImg1, 130, 270);
-	Canny(filterImg2, cannyImg2, 130, 270);
+	Canny(binaryImg2, cannyImg2, 130, 270);
 
 	imshow("canny1", cannyImg1);
 
