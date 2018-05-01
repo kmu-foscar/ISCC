@@ -339,14 +339,14 @@ bool Lane_Detector::hough_left(Mat& img, Point* p1, Point* p2){
 
   vector<Vec2f> linesL;
 
-  Point point1;
-  Point point2;
-
   int count = 0, x1 = 0, x2 = 0, y1 = 0, y2 = 0;
-  int threshold = 60;
+  int threshold = 100;
 
   for (int i = 10; i > 0; i--){
     HoughLines(img, linesL, 1, CV_PI / 180, threshold, 0, 0, 0, CV_PI /2);
+    int clusterCount = 2;
+    Mat h_points = Mat(linesL.size(), 1, CV_32FC2);
+    Mat labels, centers;
     if (linesL.size() > 1){
       for (size_t i = 0; i < linesL.size(); i++){
         count ++;
@@ -354,40 +354,61 @@ bool Lane_Detector::hough_left(Mat& img, Point* p1, Point* p2){
         float theta = linesL[i][1];
         double a = cos(theta), b = sin(theta);
         double x0 = a * rho, y0 = b * rho;
+        // cout << "x0, y0 : " << rho << ' ' << theta << endl;
+        h_points.at<Point2f>(i, 0) = Point2f(rho, (float)(theta*100));
+      }
+      kmeans(h_points, clusterCount, labels,
+            TermCriteria(TermCriteria::COUNT+TermCriteria::EPS, 10, 1.0),
+               3, KMEANS_RANDOM_CENTERS, centers);
+
+      Point mypt1 = centers.at<Point2f>(0,0);
+
+      float rho = mypt1.x;
+      float theta = (float)mypt1.y/100;
+      double a = cos(theta), b = sin(theta);
+      double x0 = a * rho, y0 = b * rho;
+
+      // cout << "pt : " << mypt1.x << ' ' << mypt1.y << endl;
 
         int _x1 = int(x0 + 1000*(-b));
         int _y1 = int(y0 + 1000*(a));
         int _x2 = int(x0 - 1000*(-b));
         int _y2 = int(y0 - 1000*(a));
 
-        point1.x = _x1; point1.y = _y1;
-        point2.x = _x2; point2.y = _y2;
+        x1 += _x1;
+        y1 += _y1;
 
+        x2 += _x2;
+        y2 += _y2;
 
-        x1 += point1.x;
-        y1 += point1.y;
+        Point mypt2 = centers.at<Point2f>(1,0);
 
-        x2 += point2.x;
-        y2 += point2.y;
+      rho = mypt2.x;
+      theta = (float)mypt2.y/100;
+      a = cos(theta), b = sin(theta);
+      x0 = a * rho, y0 = b * rho;
 
-      }
+      // cout << "pt : " << mypt2.x << ' ' << mypt2.y << endl;
+
+        _x1 = int(x0 + 1000*(-b));
+        _y1 = int(y0 + 1000*(a));
+        _x2 = int(x0 - 1000*(-b));
+        _y2 = int(y0 - 1000*(a));
+
+        x1 += _x1;
+        y1 += _y1;
+
+        x2 += _x2;
+        y2 += _y2;
+
       break;
-    }
+    };
   }
-
   if (count != 0){
-
-    x1 /= count;
-    y1 /= count;
-
-    x2 /= count;
-    y2 /= count;
-
-    p1->x = x1; p1->y = y1;
-    p2->x = x2; p2->y = y2;
+    p1->x = x1/2; p1->y = y1/2;
+    p2->x = x2/2; p2->y = y2/2;
 
     return false;
-
   }
   return true;
 }
@@ -395,14 +416,14 @@ bool Lane_Detector::hough_left(Mat& img, Point* p1, Point* p2){
 bool Lane_Detector::hough_right(Mat& img, Point* p1, Point* p2){
   vector<Vec2f> linesR;
 
-  Point point1;
-  Point point2;
-
   int count = 0, x1 = 0, x2 = 0, y1 = 0, y2 = 0;
-  int threshold = 60;
+  int threshold = 100;
 
   for (int i = 10; i > 0; i--){
     HoughLines(img, linesR, 1, CV_PI / 180, threshold, 0, 0, CV_PI/2, CV_PI);
+    int clusterCount = 2;
+    Mat h_points = Mat(linesR.size(), 1, CV_32FC2);
+    Mat labels, centers;
     if (linesR.size() > 1){
       for (size_t i = 0; i < linesR.size(); i++){
         count ++;
@@ -410,35 +431,59 @@ bool Lane_Detector::hough_right(Mat& img, Point* p1, Point* p2){
         float theta = linesR[i][1];
         double a = cos(theta), b = sin(theta);
         double x0 = a * rho, y0 = b * rho;
+        // cout << "x0, y0 : " << rho << ' ' << theta << endl;
+        h_points.at<Point2f>(i, 0) = Point2f(rho, (float)(theta*100));
+      }
+      kmeans(h_points, clusterCount, labels,
+            TermCriteria(TermCriteria::COUNT+TermCriteria::EPS, 10, 1.0),
+               3, KMEANS_RANDOM_CENTERS, centers);
+
+      Point mypt1 = centers.at<Point2f>(0,0);
+
+      float rho = mypt1.x;
+      float theta = (float)mypt1.y/100;
+      double a = cos(theta), b = sin(theta);
+      double x0 = a * rho, y0 = b * rho;
+
+      // cout << "pt : " << mypt1.x << ' ' << mypt1.y << endl;
 
         int _x1 = int(x0 + 1000*(-b));
         int _y1 = int(y0 + 1000*(a));
         int _x2 = int(x0 - 1000*(-b));
         int _y2 = int(y0 - 1000*(a));
 
-        point1.x = _x1; point1.y = _y1;
-        point2.x = _x2; point2.y = _y2;
+        x1 += _x1;
+        y1 += _y1;
 
+        x2 += _x2;
+        y2 += _y2;
 
-        x1 += point1.x;
-        y1 += point1.y;
+        Point mypt2 = centers.at<Point2f>(1,0);
 
-        x2 += point2.x;
-        y2 += point2.y;
+      rho = mypt2.x;
+      theta = (float)mypt2.y/100;
+      a = cos(theta), b = sin(theta);
+      x0 = a * rho, y0 = b * rho;
 
-      }
+      // cout << "pt : " << mypt2.x << ' ' << mypt2.y << endl;
+
+        _x1 = int(x0 + 1000*(-b));
+        _y1 = int(y0 + 1000*(a));
+        _x2 = int(x0 - 1000*(-b));
+        _y2 = int(y0 - 1000*(a));
+
+        x1 += _x1;
+        y1 += _y1;
+
+        x2 += _x2;
+        y2 += _y2;
+
       break;
     };
   }
   if (count != 0){
-    x1 /= count;
-    y1 /= count;
-
-    x2 /= count;
-    y2 /= count;
-
-    p1->x = x1; p1->y = y1;
-    p2->x = x2; p2->y = y2;
+    p1->x = x1/2; p1->y = y1/2;
+    p2->x = x2/2; p2->y = y2/2;
 
     return false;
   }
