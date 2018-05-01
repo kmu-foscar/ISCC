@@ -3,108 +3,73 @@
 #include <signal.h>
 #include <sensor_msgs/Imu.h>
 #include <math.h>
+#include <queue>
+#include <time.h>
 
 #define PI 3.14159265
 
+using namespace std;
+
 ros::Subscriber sub;
 
+clock_t prev_time, cur_time;
+
 //float gyro[3];
+// queue<float> accel_x;
+// queue<float> accel_y;
+// queue<float> accel_z;
+// queue<float> magnetic_x;
+// queue<float> magnetic_y;
+
+float cur_position_x = 0.f;
+float cur_position_y = 0.f;
+
+float prev_velocity_x = 0.f;
+float prev_velocity_y = 0.f;
+float cur_velocity_x = 0.f;
+float cur_velocity_y = 0.f;
+
+float prev_accel_x = 0.f;
+float prev_accel_y = 0.f;
+
 float accel[3];
 float magnetic[3];
-float _HDR_I[3] = {0.,};
-bool _w_lp_init = false;
-bool _w_dl_init = false;
-float _w_lp[3];
-float _w_dl[3];
-float _T = 0.005;
-float _tau = 0.01;
+
 float theta = 0.;
 
 void testerCallback(const sensor_msgs::Imu &msg)
 {
-  //gyro[0] = msg.angular_velocity.x;
-  //gyro[1] = msg.angular_velocity.y;
-  //gyro[2] = msg.angular_velocity.z;
 
-  accel[0] = msg.linear_acceleration.x;
-  accel[1] = msg.linear_acceleration.y;
-  accel[2] = msg.linear_acceleration.z;
+  prev_accel_x = accel[0];
+  prev_accel_y = accel[1];
+
+  accel[0] = msg.linear_acceleration.x * 9.8;
+  accel[1] = msg.linear_acceleration.y * 9.8;
+  accel[2] = msg.linear_acceleration.z * 9.8;
 
   magnetic[0] = msg.angular_velocity.x;
   magnetic[1] = msg.angular_velocity.y;
   magnetic[2] = msg.angular_velocity.z;
+
+  if(accel[0] > 0.02)
+  {
+    prev_velocity_x = cur_velocity_x;
+    cur_velocity_x += (accel[0] - prev_accel_x) / 0.1;
+  }
+
+  if(accel[1] > 0.02)
+  {
+    prev_velocity_y = cur_velocity_y;
+    cur_velocity_y += (accel[1] - prev_accel_y) / 0.1;
+  }
+
+  cur_position_x = (cur_velocity_x - prev_velocity_x) / 0.1;
+  cur_position_y = (cur_velocity_y - prev_velocity_y) / 0.1;
 }
 
 void calcAzimuth(float v[3])
 {
-  theta = atan(v[1] / v[0]) * 180 / PI;
-}
-
- void LowpPassfilter(float v[3])
- {
-   if(!_w_lp_init){
-     _w_lp[0] = v[0];
-     _w_lp[1] = v[1];
-     _w_lp[2] = v[2];
-
-     _w_lp_init = true;
-   }
-
-   _w_lp[0] = (_T*v[0] + _tau*_w_lp[0])/(_T + _tau);
-   _w_lp[1] = (_T*v[1] + _tau*_w_lp[1])/(_T + _tau);
-   _w_lp[2] = (_T*v[2] + _tau*_w_lp[2])/(_T + _tau);
-
-   v[0] = _w_lp[0];
-   v[1] = _w_lp[1];
-   v[2] = _w_lp[2];
- }
-
-int SIGN(float v)
-{
-  if(v > 0.) return 1;
-  if(v < 0.) return -1;
-  return 0;
-}
-
-void HDR(float v[3], double threshold, double ic)
-{
-  v[0] += _HDR_I[0];
-  v[1] += _HDR_I[1];
-  v[2] += _HDR_I[2];
-
-  if((-threshold < v[0] && v[0] < threshold) &&
-  (-threshold < v[1] && v[1] < threshold) &&
-  (-threshold < v[2] && v[2] < threshold)){
-    _HDR_I[0] -= SIGN(v[0]) * ic;
-    _HDR_I[1] -= SIGN(v[1]) * ic;
-    _HDR_I[2] -= SIGN(v[2]) * ic;
-  }
-}
-
-void Delagging(float v[3])
-{
-  if(!_w_dl_init)
-  {
-    _w_dl[0] = v[0];
-    _w_dl[1] = v[1];
-    _w_dl[2] = v[2];
-
-    _w_dl_init = true;
-  }
-
-  float wd[3];
-
-  wd[0] = v[0] + _tau/_T*(v[0] - _w_dl[0]);
-  wd[1] = v[1] + _tau/_T*(v[1] - _w_dl[1]);
-  wd[2] = v[2] + _tau/_T*(v[2] - _w_dl[2]);
-
-  _w_dl[0] = v[0];
-  _w_dl[1] = v[1];
-  _w_dl[2] = v[2];
-
-  v[0] = wd[0];
-  v[1] = wd[1];
-  v[2] = wd[2];
+  theta = atan2(v[1] , v[0]) * 180 / PI;
 }
 
 void SaveIMUData(const char* filename)
@@ -112,7 +77,7 @@ void SaveIMUData(const char* filename)
   FILE *fp = fopen(filename, "at");
   if(fp)
   {
-    // fprintf(fp, "%10.6f %10.6f %10.6f\n", gyro[0], gyro[1], gyro[2]);
+    // fprintf(fp, "%10.6f %10.6f %10.6f\n", );
   }
   fclose(fp);
 }
@@ -126,16 +91,11 @@ int main(int argc, char* argv[])
 
   while(ros::ok())
   {
-    // LowpPassfilter(gyro);
-    // HDR(gyro, 3, 0.001);
-    // Delagging(gyro);
     //SaveIMUData("imu_test.txt");
-
     calcAzimuth(magnetic);
-
-    //printf("%f , %f , %f :: %f , %f , %f\n", gyro[0], gyro[1], gyro[2], accel[0] , accel[1] , accel[2]);
-    //printf("%f , %f , %f :: %f , %f , %f\n", magnetic[0], magnetic[1], magnetic[2], accel[0] , accel[1] , accel[2]);
-    printf("%f", theta);
+    printf("%f , %f\n", cur_position_x, cur_position_y);
+    printf("%f\n", sqrt((cur_position_x*cur_position_x) + (cur_position_y * cur_position_y)));
+    //printf("%f", theta);
     printf("\n");
 
     ros::spinOnce();
