@@ -258,7 +258,7 @@ while not rospy.is_shutdown():
         imuMsg.linear_acceleration.y = float(words[4])
         imuMsg.linear_acceleration.z = float(words[5])
 
-        rospy.loginfo(str(words[0]) + " " + str(words[1]) + " " + str(words[2]) + " " + str(words[3]) + " " + str(words[4]) + " " + str(words[5]))
+        rospy.loginfo(str(words[0]) + " " + str(words[1]) + " " + str(words[2]) + " " + str(words[3]) + " " + str(words[4]) + " " + str(words[5]) + " " + str(words[6]) + " " + str(words[7]) + " " + str(words[8]))
 
         #rospy.loginfo(str(roll) + " " + str(pitch) + " " + str(yaw) + " " + str(imuMsg.linear_acceleration.x) + " " + str(imuMsg.linear_acceleration.y) + " " + str(imuMsg.linear_acceleration.z))
 
