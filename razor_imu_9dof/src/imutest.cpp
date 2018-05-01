@@ -6,8 +6,9 @@
 
 ros::Subscriber sub;
 
-float gyro[3];
+//float gyro[3];
 float accel[3];
+float magnetic[3];
 float _HDR_I[3] = {0.,};
 bool _w_lp_init = false;
 bool _w_dl_init = false;
@@ -18,13 +19,17 @@ float _tau = 0.01;
 
 void testerCallback(const sensor_msgs::Imu &msg)
 {
-  gyro[0] = msg.angular_velocity.x;
-  gyro[1] = msg.angular_velocity.y;
-  gyro[2] = msg.angular_velocity.z;
+  //gyro[0] = msg.angular_velocity.x;
+  //gyro[1] = msg.angular_velocity.y;
+  //gyro[2] = msg.angular_velocity.z;
 
   accel[0] = msg.linear_acceleration.x;
   accel[1] = msg.linear_acceleration.y;
   accel[2] = msg.linear_acceleration.z;
+
+  magnetic[0] = msg.angular_velocity.x;
+  magnetic[1] = msg.angular_velocity.y;
+  magnetic[2] = msg.angular_velocity.z;
 }
 
  void LowpPassfilter(float v[3])
@@ -99,7 +104,7 @@ void SaveIMUData(const char* filename)
   FILE *fp = fopen(filename, "at");
   if(fp)
   {
-    fprintf(fp, "%10.6f %10.6f %10.6f\n", gyro[0], gyro[1], gyro[2]);
+    // fprintf(fp, "%10.6f %10.6f %10.6f\n", gyro[0], gyro[1], gyro[2]);
   }
   fclose(fp);
 }
@@ -113,12 +118,13 @@ int main(int argc, char* argv[])
 
   while(ros::ok())
   {
-    LowpPassfilter(gyro);
-    HDR(gyro, 3, 0.001);
-    Delagging(gyro);
+    // LowpPassfilter(gyro);
+    // HDR(gyro, 3, 0.001);
+    // Delagging(gyro);
     //SaveIMUData("imu_test.txt");
 
-    printf("%f , %f , %f :: %f , %f , %f\n", gyro[0], gyro[1], gyro[2], accel[0] , accel[1] , accel[2]);
+    //printf("%f , %f , %f :: %f , %f , %f\n", gyro[0], gyro[1], gyro[2], accel[0] , accel[1] , accel[2]);
+    printf("%f , %f , %f :: %f , %f , %f\n", magnetic[0], magnetic[1], magnetic[2], accel[0] , accel[1] , accel[2]);
     printf("\n");
 
     ros::spinOnce();

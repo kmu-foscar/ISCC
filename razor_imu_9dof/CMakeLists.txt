@@ -32,7 +32,6 @@ install(DIRECTORY magnetometer_calibration
 )
 
 add_executable(test_node src/imutest.cpp)
-##add_executable(main_node nodes/test.cpp)
 
 target_link_libraries(test_node
 	${catkin_LIBRARIES}
