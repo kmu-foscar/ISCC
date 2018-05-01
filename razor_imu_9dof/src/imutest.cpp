@@ -4,6 +4,8 @@
 #include <sensor_msgs/Imu.h>
 #include <math.h>
 
+#define PI 3.14159265
+
 ros::Subscriber sub;
 
 //float gyro[3];
@@ -16,6 +18,7 @@ float _w_lp[3];
 float _w_dl[3];
 float _T = 0.005;
 float _tau = 0.01;
+float theta = 0.;
 
 void testerCallback(const sensor_msgs::Imu &msg)
 {
@@ -30,6 +33,11 @@ void testerCallback(const sensor_msgs::Imu &msg)
   magnetic[0] = msg.angular_velocity.x;
   magnetic[1] = msg.angular_velocity.y;
   magnetic[2] = msg.angular_velocity.z;
+}
+
+void calcAzimuth(float v[3])
+{
+  theta = atan(v[1] / v[0]) * 180 / PI;
 }
 
  void LowpPassfilter(float v[3])
@@ -123,8 +131,11 @@ int main(int argc, char* argv[])
     // Delagging(gyro);
     //SaveIMUData("imu_test.txt");
 
+    calcAzimuth(magnetic);
+
     //printf("%f , %f , %f :: %f , %f , %f\n", gyro[0], gyro[1], gyro[2], accel[0] , accel[1] , accel[2]);
-    printf("%f , %f , %f :: %f , %f , %f\n", magnetic[0], magnetic[1], magnetic[2], accel[0] , accel[1] , accel[2]);
+    //printf("%f , %f , %f :: %f , %f , %f\n", magnetic[0], magnetic[1], magnetic[2], accel[0] , accel[1] , accel[2]);
+    printf("%f", theta);
     printf("\n");
 
     ros::spinOnce();
