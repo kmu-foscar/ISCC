@@ -38,7 +38,7 @@ string to_string(int n) {
 }
 
 class Lane_Detector {
-private :
+protected :
     float left_slope;
     float right_slope;
     float left_length;
@@ -164,14 +164,14 @@ void Lane_Detector::operate(){
 
 	imshow("canny1", cannyImg1);
 
-	Mat initORI1;
-	Mat initORI2;
+	Mat initROI1;
+	Mat initROI2;
 
-	region_of_interest_L(originImg_left, initORI1);
-	region_of_interest_R(originImg_right, initORI2);
+	region_of_interest_L(originImg_left, initROI1);
+	region_of_interest_R(originImg_right, initROI2);
 
-	imshow("initORI1", initORI1);
-	imshow("initORI2", initORI2);
+	imshow("initORI1", initROI1);
+	imshow("initORI2", initROI2);
 
 
 
@@ -179,21 +179,21 @@ void Lane_Detector::operate(){
 		Mat ddd;
 		v_roi(originImg_left, ddd, p1, p2);
 		imshow("v_roi_check", ddd);
-		v_roi(cannyImg1, imageROI1, p1, p2);
+		v_roi(cannyImg1, initROI1, p1, p2);
 	}
 	else{
-		region_of_interest_L(cannyImg1, imageROI1);
+		region_of_interest_L(cannyImg1, initROI1);
 	}
 
 	if(!right_error){
-		v_roi(cannyImg2, imageROI2, p3, p4);
+		v_roi(cannyImg2, initROI2, p3, p4);
 	}
 	else{
-		region_of_interest_R(cannyImg2, imageROI2);
+		region_of_interest_R(cannyImg2, initROI2);
 	}
 
-	left_error = hough_left(imageROI1, &p1, &p2);
-	right_error = hough_right(imageROI2, &p3, &p4);
+	left_error = hough_left(initROI1, &p1, &p2);
+	right_error = hough_right(initROI2, &p3, &p4);
 
 	line(originImg_left, p1, p2, COLOR_RED, 4, CV_AA);
 	line(originImg_right, p3, p4, COLOR_RED, 4, CV_AA);
