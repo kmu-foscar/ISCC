@@ -6,7 +6,6 @@
 #include <ctime>
 #include <queue>
 #include <cv.h>
-#include <cv_bridge/cv_bridge.h>
 #include <unistd.h>
 #include <highgui.h>
 #include "opencv2/opencv.hpp"
@@ -48,9 +47,6 @@ protected :
     VideoCapture capture_right;
     VideoWriter output_video;
 
-    Mat originImg_left;
-    Mat originImg_right;
-
     bool left_error;
     bool right_error;
 
@@ -67,6 +63,8 @@ protected :
     int position(const Point P1, const Point P2);
 public :
     Point p1, p2, p3, p4;
+    Mat originImg_left;
+    Mat originImg_right;
     Lane_Detector(){}
     void init();
     void operate();
@@ -146,23 +144,22 @@ void Lane_Detector::operate(){
 	  return;
 	}
 
-
 	GaussianBlur(originImg_left, filterImg1, Size(5, 5), 0);
 	GaussianBlur(originImg_right, filterImg2, Size(5, 5), 0);
 
 	cvtColor(filterImg1, img_hsv, COLOR_BGR2HSV);
 
-	imshow("img_hsv", img_hsv);
+	//imshow("img_hsv", img_hsv);
 
 	inRange(img_hsv, HSV_YELLOW_LOWER, HSV_YELLOW_UPPER, binaryImg1);
 	inRange(originImg_right, RGB_WHITE_LOWER, RGB_WHITE_UPPER, binaryImg2);
 
-	imshow("mask", binaryImg1);
+	//imshow("mask", binaryImg1);
 
 	Canny(binaryImg1, cannyImg1, 130, 270);
 	Canny(binaryImg2, cannyImg2, 130, 270);
 
-	imshow("canny1", cannyImg1);
+	//imshow("canny1", cannyImg1);
 
 	Mat initROI1;
 	Mat initROI2;
@@ -170,15 +167,13 @@ void Lane_Detector::operate(){
 	region_of_interest_L(originImg_left, initROI1);
 	region_of_interest_R(originImg_right, initROI2);
 
-	imshow("initORI1", initROI1);
-	imshow("initORI2", initROI2);
-
-
+	//imshow("initORI1", initROI1);
+	//imshow("initORI2", initROI2);
 
 	if(!left_error){
 		Mat ddd;
 		v_roi(originImg_left, ddd, p1, p2);
-		imshow("v_roi_check", ddd);
+		//imshow("v_roi_check", ddd);
 		v_roi(cannyImg1, initROI1, p1, p2);
 	}
 	else{
@@ -212,7 +207,7 @@ void Lane_Detector::operate(){
 	resize(originImg_right, b, Size(640, 480), 0, 0, CV_INTER_LINEAR);
 	hconcat(a, b, c);
 
-	imshow("result", c);
+	//imshow("result", c);
 
 	// output_video << c;
 	if(waitKey(10) == 0){
@@ -251,10 +246,10 @@ void Lane_Detector::v_roi(Mat& img, Mat& img_ROI, const Point& p1, const Point& 
 
 
 void Lane_Detector::region_of_interest_L(Mat& img, Mat& img_ROI){
-  Point a = Point(0, 0);
+  Point a = Point(0, 40);
   Point b = Point(0, img.rows);
   Point c = Point(img.cols, img.rows/5);
-  Point d = Point(img.cols, 0);
+  Point d = Point(img.cols, 40);
 
   vector <Point> Left_Point;
 
@@ -276,10 +271,10 @@ void Lane_Detector::region_of_interest_L(Mat& img, Mat& img_ROI){
 }
 
 void Lane_Detector::region_of_interest_R(Mat& img, Mat& img_ROI){
-	Point a = Point(0, 0);
+	Point a = Point(0, 40);
 	Point b = Point(0, img.rows/5);
 	Point c = Point(img.cols, img.rows);
-	Point d = Point(img.cols, 0);
+	Point d = Point(img.cols, 40);
 
   vector <Point> Left_Point;
 
