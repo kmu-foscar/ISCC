@@ -106,8 +106,8 @@ void Lane_Detector::init(){
   datetime = localtime(&t);
   string s_t = path.append(to_string(datetime->tm_year + 1900)).append("-").append(to_string(datetime->tm_mon + 1)).append("-").append(to_string(datetime->tm_mday)).append("_").append(to_string(datetime->tm_hour)).append(":").append(to_string(datetime->tm_min)).append(":").append(to_string(datetime->tm_sec)).append(".avi");
 
-  capture_left = VideoCapture(2);
-  capture_right = VideoCapture(1);
+  capture_left = VideoCapture(3);
+  capture_right = VideoCapture(2);
   output_video.open(s_t, VideoWriter::fourcc('X', 'V', 'I', 'D'), 20, Size(1280, 480), true);
   mask = getStructuringElement(MORPH_RECT, Size(3, 3), Point(1, 1));
 
@@ -158,12 +158,12 @@ void Lane_Detector::operate(){
 		Mat Img_copy_L = originImg_left(Rect(0, originImg_left.rows/8 * 1, originImg_left.cols, originImg_left.rows/8 * 7));
 		Mat Img_copy_R = originImg_right(Rect(0, originImg_left.rows/8 * 1, originImg_left.cols, originImg_left.rows/8 * 7));
 
-		GaussianBlur(Img_copy_L, filterImg1, Size(9, 9), 0);
-		GaussianBlur(Img_copy_R, filterImg2, Size(9, 9), 0);
+		GaussianBlur(Img_copy_L, filterImg1, Size(3, 3), 0);
+		GaussianBlur(Img_copy_R, filterImg2, Size(3, 3), 0);
 
 
-    Canny(filterImg1, cannyImg1, 200, 300);
-    Canny(filterImg2, cannyImg2, 200, 300);
+    Canny(filterImg1, cannyImg1, 150, 300);
+    Canny(filterImg2, cannyImg2, 150, 300);
 
 		imshow("canny1", cannyImg1);
 		imshow("canny2", cannyImg2);
