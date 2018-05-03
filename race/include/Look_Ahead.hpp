@@ -84,7 +84,7 @@ void Look_Ahead::operate(Mat originImg_left_LD, Mat originImg_right_LD) {
 	line(originImg_left, p1_copy, p2_copy, COLOR_BLUE, 4, CV_AA);
 	line(originImg_right, p3, p4, COLOR_BLUE, 4, CV_AA);
 
-	cout << p1.x << " " << p1.y << " " << p2.x << " " << p2.y << endl;
+	//cout << p1.x << " " << p1.y << " " << p2.x << " " << p2.y << endl;
 
 	left_slope = get_slope(p1, p2);
 	right_slope = get_slope(p3, p4);
@@ -100,7 +100,7 @@ void Look_Ahead::operate(Mat originImg_left_LD, Mat originImg_right_LD) {
 
 	imshow("lookahead", c);
 
-	output_video << c;
+	//output_video << c;
 	if(waitKey(10) == 0){
 		return;
 	}
@@ -187,7 +187,7 @@ bool Look_Ahead::hough_right(Mat& img, Point* p1, Point* p2){
   vector<Vec2f> linesR;
 
   int count = 0, x1 = 0, x2 = 0, y1 = 0, y2 = 0;
-  int threshold = 50;
+  int threshold = 40;
 
   for (int i = 10; i > 0; i--){
     HoughLines(img, linesR, 1, CV_PI / 180, threshold, 0, 0, CV_PI/2, CV_PI);
