@@ -4,7 +4,7 @@ project(race)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-set (OpenCV_DIR /opt/ros/kinetic/share/OpenCV-3.3.1)
+set (OpenCV_DIR /opt/ros/kinetic/share/OpenCV-3.3.1-dev/)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
   geometry_msgs
   cv_bridge
+  serial
   obstacle_detector
   OpenCV REQUIRED
   tf
@@ -140,6 +141,8 @@ include_directories(include
 add_executable(main_node src/main.cpp)
 add_executable(race_node src/controller_vision.cpp)
 add_executable(obstacle_avoider_node src/controller_lidar.cpp)
+add_executable(write_serial_node src/write_serial.cpp)
+
 # add_executable(odom_scan_matcher src/getOdomFromMatcher.cpp)
 # add_executable(hectorOdom src/hectorOdom.cpp)
 # add_executable(amclOdom src/amclOdom.cpp)
@@ -161,6 +164,10 @@ target_link_libraries(race_node
 target_link_libraries(obstacle_avoider_node
    ${OpenCV_LIBS} ${catkin_LIBRARIES}
 )
+target_link_libraries(write_serial_node
+   ${catkin_LIBRARIES}
+)
+
 # target_link_libraries(hectorOdom
 #   ${catkin_LIBRARIES}
 # )
