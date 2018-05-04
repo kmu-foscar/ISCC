@@ -156,26 +156,18 @@ void Lane_Detector::operate(){
 
 	cvtColor(filterImg1, img_hsv, COLOR_BGR2HSV);
 
-	//imshow("img_hsv", img_hsv);
-
 	inRange(img_hsv, HSV_YELLOW_LOWER, HSV_YELLOW_UPPER, binaryImg1);
 	inRange(originImg_right, RGB_WHITE_LOWER, RGB_WHITE_UPPER, binaryImg2);
 
-	//imshow("mask", binaryImg1);
-
 	Canny(binaryImg1, cannyImg1, 130, 270);
 	Canny(binaryImg2, cannyImg2, 130, 270);
-
-	//imshow("canny1", cannyImg1);
 
 	// Mat initROI1;
 	// Mat initROI2;
 
 	// region_of_interest_L(originImg_left, initROI1);
 	// region_of_interest_R(originImg_right, initROI2);
-
-	//imshow("initORI1", initROI1);
-	//imshow("initORI2", initROI2);
+	
 
 	if(!left_error){
 		v_roi(cannyImg1, initROI1, p1, p2);
@@ -210,9 +202,14 @@ void Lane_Detector::operate(){
 	resize(originImg_left, a, Size(640, 480), 0, 0, CV_INTER_LINEAR);
 	resize(originImg_right, b, Size(640, 480), 0, 0, CV_INTER_LINEAR);
 	hconcat(a, b, c);
-
+#ifdef DEBUG
+	imshow("img_hsv", img_hsv);
+	imshow("mask", binaryImg1);
+	imshow("canny1", cannyImg1);
+	imshow("initORI1", initROI1);
+	imshow("initORI2", initROI2);
 	imshow("result", c);
-
+#endif
 	// output_video << c;
 	if(waitKey(10) == 0){
 		return;

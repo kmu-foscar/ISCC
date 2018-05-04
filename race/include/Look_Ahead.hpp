@@ -90,8 +90,13 @@ void Look_Ahead::operate(Mat originImg_left_LD, Mat originImg_right_LD) {
 	resize(originImg_left, a, Size(640, 480), 0, 0, CV_INTER_LINEAR);
 	resize(originImg_right, b, Size(640, 480), 0, 0, CV_INTER_LINEAR);
 	hconcat(a, b, c);
-
+#ifdef DEBUG	
+	imshow("canny_la1", cannyImg1);
+	imshow("canny_la2", cannyImg2);
+	imshow("binaryImg1_la", binaryImg1);
+	imshow("binaryImg2_la", binaryImg2);
 	imshow("lookahead", c);
+#endif
 
 	//output_video << c;
 	if(waitKey(10) == 0){
