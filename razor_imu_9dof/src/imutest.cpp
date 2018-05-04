@@ -39,6 +39,22 @@ int countX = 0;
 int countY = 0;
 int time_stamp = -1;
 
+void SaveIMUData(const char* filename)
+{
+  FILE *fp = fopen(filename, "at");
+  if(fp)
+  {
+    fprintf(fp, "%d : %10.6f %10.6f\n", time_stamp, cur_lat, cur_lon);
+  }
+  fclose(fp);
+}
+
+void calcGPS()
+{
+  cur_lat += (moving_dist * sin(theta)) * (0.00001 / 1.1);
+  cur_lon += (moving_dist * cos(theta)) * (0.00001 / 0.9);
+}
+
 void testerCallback(const sensor_msgs::Imu &msg)
 {
 
@@ -53,17 +69,27 @@ void testerCallback(const sensor_msgs::Imu &msg)
   magnetic[1] = msg.angular_velocity.y;
   magnetic[2] = msg.angular_velocity.z;
 
-  if(countX == 10) prev_accel_x = accel[0] = 0;
-  if(countY == 10) prev_accel_y = accel[1] = 0;
+  if(countX >= 10)
+  {
+    prev_accel_x = accel[0] = 0;
+    cur_velocity_x = 0;
+    cur_velocity_y = 0;
+  }
+  if(countY >= 10)
+  {
+    prev_accel_y = accel[1] = 0;
+    cur_velocity_x = 0;
+    cur_velocity_y = 0;
+  }
 
-  if(accel[0] > 0.02 || accel[0] < -0.02) 
+  if(accel[0] > 0.15 || accel[0] < -0.15)
   {
     prev_velocity_x = cur_velocity_x;
     cur_velocity_x += (accel[0] - prev_accel_x) / 0.1;
     countX = 0;
   } else countX++;
 
-  if(accel[1] > 0.02 || accel[1] < -0.02) 
+  if(accel[1] > 0.15 || accel[1] < -0.15)
   {
     prev_velocity_y = cur_velocity_y;
     cur_velocity_y += (accel[1] - prev_accel_y) / 0.1;
@@ -74,27 +100,14 @@ void testerCallback(const sensor_msgs::Imu &msg)
   delta_position_y = ((cur_velocity_y + prev_velocity_y) / 2) * 0.1;
 
   moving_dist = sqrt(delta_position_x * delta_position_x + delta_position_y * delta_position_y);
+
+  calcGPS();
+  SaveIMUData("GPSdata.txt");
 }
 
 void calcAzimuth(float v[3])
 {
   theta = atan2(v[1] , v[0]) * 180 / PI;
-}
-
-void calcGPS()
-{
-  cur_lat += (moving_dist * sin(theta)) * (0.00001 / 1.1);
-  cur_lon += (moving_dist * cos(theta)) * (0.00001 / 0.9); 
-}
-
-void SaveIMUData(const char* filename)
-{
-  FILE *fp = fopen(filename, "at");
-  if(fp)
-  {
-    fprintf(fp, "%d : %10.6f %10.6f %10.6f\n", time_stamp, cur_lat, cur_lon);
-  }
-  fclose(fp);
 }
 
 int main(int argc, char* argv[])
@@ -107,9 +120,7 @@ int main(int argc, char* argv[])
   while(ros::ok())
   {
     calcAzimuth(magnetic);
-    calcGPS();
-    printf("%d : %f , %f\n", ++time_stamp, cur_lat, cur_lon);
-    //SaveIMUData("imu_test.txt");
+    printf("%d : %10.6f , %10.6f\n", ++time_stamp, cur_lat, cur_lon);
 
     ros::spinOnce();
   }
