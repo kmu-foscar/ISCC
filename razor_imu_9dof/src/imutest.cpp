@@ -14,13 +14,6 @@ ros::Subscriber sub;
 
 clock_t prev_time, cur_time;
 
-//float gyro[3];
-// queue<float> accel_x;
-// queue<float> accel_y;
-// queue<float> accel_z;
-// queue<float> magnetic_x;
-// queue<float> magnetic_y;
-
 float cur_position_x = 0.f;
 float cur_position_y = 0.f;
 
@@ -32,10 +25,15 @@ float cur_velocity_y = 0.f;
 float prev_accel_x = 0.f;
 float prev_accel_y = 0.f;
 
+float moving_dist = 0.f;
+
 float accel[3];
 float magnetic[3];
 
 float theta = 0.;
+
+int countX = 0;
+int countY = 0;
 
 void testerCallback(const sensor_msgs::Imu &msg)
 {
@@ -51,20 +49,27 @@ void testerCallback(const sensor_msgs::Imu &msg)
   magnetic[1] = msg.angular_velocity.y;
   magnetic[2] = msg.angular_velocity.z;
 
-  if(accel[0] > 0.02)
+  if(countX == 10) prev_accel_x = accel[0] = 0;
+  if(countY == 10) prev_accel_y = accel[1] = 0;
+
+  if(accel[0] > 0.02) 
   {
     prev_velocity_x = cur_velocity_x;
     cur_velocity_x += (accel[0] - prev_accel_x) / 0.1;
-  }
+    countX = 0;
+  } else countX++;
 
-  if(accel[1] > 0.02)
+  if(accel[1] > 0.02) 
   {
     prev_velocity_y = cur_velocity_y;
     cur_velocity_y += (accel[1] - prev_accel_y) / 0.1;
-  }
+    countY = 0;
+  } else countY++;
 
   cur_position_x = (cur_velocity_x - prev_velocity_x) / 0.1;
   cur_position_y = (cur_velocity_y - prev_velocity_y) / 0.1;
+
+  
 }
 
 void calcAzimuth(float v[3])
