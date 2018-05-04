@@ -121,6 +121,10 @@ void Lane_Detector::init(){
 
   capture_left = VideoCapture(2);
   capture_right = VideoCapture(1);
+  capture_left.set(CV_CAP_PROP_FRAME_WIDTH,320);
+  capture_left.set(CV_CAP_PROP_FRAME_HEIGHT,240);
+  capture_right.set(CV_CAP_PROP_FRAME_WIDTH,320);
+  capture_right.set(CV_CAP_PROP_FRAME_HEIGHT,240);
   output_video.open(s_t, VideoWriter::fourcc('X', 'V', 'I', 'D'), 20, Size(1280, 480), true);
   mask = getStructuringElement(MORPH_RECT, Size(3, 3), Point(1, 1));
 
@@ -131,9 +135,12 @@ void Lane_Detector::init(){
 }
 
 void Lane_Detector::operate(){
-	capture_left >> originImg_left;
-	capture_right >> originImg_right;
-
+	Mat input_left, input_right;
+	capture_left >> input_left;
+	capture_right >> input_right;
+	
+	resize(input_left, originImg_left, Size(640, 480), 0, 0, CV_INTER_LINEAR);
+	resize(input_right, originImg_right, Size(640, 480), 0, 0, CV_INTER_LINEAR);
 	if (originImg_left.empty()){
 		cerr << "Empty Left Image" << endl;
 		return;
