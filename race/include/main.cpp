@@ -3,10 +3,13 @@
 using namespace std;
 
 int main(int argc, char* argv[]) {
+    Lane_Detector* ld = new Lane_Detector();
     Look_Ahead* la = new Look_Ahead();
-    la->init();
+    ld->init();
     while(true) {
-        la->operate();
+        ld->operate();
+        la->operate(ld->originImg_left, ld->originImg_right);
     }
     delete la;
+    delete ld;
 }
