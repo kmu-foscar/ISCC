@@ -51,8 +51,8 @@ void SaveIMUData(const char* filename)
 
 void calcGPS()
 {
-  cur_lat += (moving_dist * sin(theta)) * (0.00001 / 1.1);
-  cur_lon += (moving_dist * cos(theta)) * (0.00001 / 0.9);
+  cur_lat += ((moving_dist * sin(theta)) * (0.00001 / 1.1));
+  cur_lon += ((moving_dist * cos(theta)) * (0.00001 / 0.9));
 }
 
 void testerCallback(const sensor_msgs::Imu &msg)
@@ -73,26 +73,24 @@ void testerCallback(const sensor_msgs::Imu &msg)
   {
     prev_accel_x = accel[0] = 0;
     cur_velocity_x = 0;
-    cur_velocity_y = 0;
   }
   if(countY >= 10)
   {
     prev_accel_y = accel[1] = 0;
-    cur_velocity_x = 0;
     cur_velocity_y = 0;
   }
 
-  if(accel[0] > 0.15 || accel[0] < -0.15)
+  if(accel[0] > 0.02 || accel[0] < -0.02)
   {
     prev_velocity_x = cur_velocity_x;
-    cur_velocity_x += (accel[0] - prev_accel_x) / 0.1;
+    cur_velocity_x += ((accel[0] - prev_accel_x) * 0.1);
     countX = 0;
   } else countX++;
 
-  if(accel[1] > 0.15 || accel[1] < -0.15)
+  if(accel[1] > 0.02 || accel[1] < -0.02)
   {
     prev_velocity_y = cur_velocity_y;
-    cur_velocity_y += (accel[1] - prev_accel_y) / 0.1;
+    cur_velocity_y += ((accel[1] - prev_accel_y) * 0.1);
     countY = 0;
   } else countY++;
 
@@ -102,7 +100,10 @@ void testerCallback(const sensor_msgs::Imu &msg)
   moving_dist = sqrt(delta_position_x * delta_position_x + delta_position_y * delta_position_y);
 
   calcGPS();
-  SaveIMUData("GPSdata.txt");
+
+  printf("%d : %10.6f , %10.6f\n", ++time_stamp, cur_lat, cur_lon);
+
+  //SaveIMUData("GPSdata.txt");
 }
 
 void calcAzimuth(float v[3])
@@ -120,8 +121,6 @@ int main(int argc, char* argv[])
   while(ros::ok())
   {
     calcAzimuth(magnetic);
-    printf("%d : %10.6f , %10.6f\n", ++time_stamp, cur_lat, cur_lon);
-
     ros::spinOnce();
   }
 
