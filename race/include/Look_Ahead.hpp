@@ -25,9 +25,9 @@ private :
   void v_roi(Mat& img, Mat& img_ROI, const Point& p1, const Point& p2);
   void region_of_interest_L(Mat& img, Mat& img_ROI);
   void region_of_interest_R(Mat& img, Mat& img_ROI);
-   
+
 public :
-  Look_Ahead();  
+  Look_Ahead();
   void operate(Mat originImg_left, Mat originImg_right);
 };
 Look_Ahead::Look_Ahead() {
@@ -54,14 +54,7 @@ void Look_Ahead::operate(Mat originImg_left_LD, Mat originImg_right_LD) {
 	Canny(binaryImg1, cannyImg1, (binaryImg1.rows + binaryImg1.cols)/4, (binaryImg1.rows + binaryImg1.cols)/2);
 	Canny(binaryImg2, cannyImg2, (binaryImg2.rows + binaryImg2.cols)/4, (binaryImg2.rows + binaryImg2.cols)/2);
 
-	Mat initROI1;
-	Mat initROI2;
-
-	region_of_interest_L(croppedImg1, initROI1);
-	region_of_interest_R(croppedImg2, initROI2);
-
 	if(!left_error){
-		Mat ddd;
 		v_roi(cannyImg1, initROI1, p1, p2);
 	}
 	else{
@@ -69,7 +62,7 @@ void Look_Ahead::operate(Mat originImg_left_LD, Mat originImg_right_LD) {
 	}
 
 	if(!right_error){
-    v_roi(cannyImg2, initROI2, p3, p4);
+    v_roi(cannyImg2, initROI2, p4, p3);
 	}
 	else{
 		region_of_interest_R(cannyImg2, initROI2);
@@ -124,7 +117,6 @@ bool Look_Ahead::hough_left(Mat& img, Point* p1, Point* p2){
         float theta = linesL[i][1];
         double a = cos(theta), b = sin(theta);
         double x0 = a * rho, y0 = b * rho;
-        // cout << "x0, y0 : " << rho << ' ' << theta << endl;
         h_points.at<Point2f>(i, 0) = Point2f(rho, (float)(theta*100));
       }
       kmeans(h_points, clusterCount, labels,
@@ -138,7 +130,6 @@ bool Look_Ahead::hough_left(Mat& img, Point* p1, Point* p2){
       double a = cos(theta), b = sin(theta);
       double x0 = a * rho, y0 = b * rho;
 
-      // cout << "pt : " << mypt1.x << ' ' << mypt1.y << endl;
 
         int _x1 = int(x0 + 1000*(-b));
         int _y1 = int(y0 + 1000*(a));

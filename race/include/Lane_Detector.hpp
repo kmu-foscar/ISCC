@@ -50,9 +50,8 @@ protected :
     bool left_error;
     bool right_error;
 
-		Mat img_hsv, filterImg1, filterImg2, binaryImg1, binaryImg2,
-				imageROI1, imageROI2, blured1, blured2, mask, openingImg1, openingImg2,
-				cannyImg1, cannyImg2, houghImg1, houghImg2;
+		Mat img_hsv, filterImg1, filterImg2, binaryImg1, binaryImg2, initROI1, initROI2,
+		 		mask, cannyImg1, cannyImg2, houghImg1, houghImg2;
 
     void v_roi(Mat& img, Mat& img_ROI, const Point& p1, const Point& p2);
     void region_of_interest_L(Mat& img, Mat& img_ROI);
@@ -61,6 +60,7 @@ protected :
     bool hough_right(Mat& img, Point* p1, Point* p2);
     float get_slope(const Point& p1, const Point& p2);
     int position(const Point P1, const Point P2);
+
 public :
     Point p1, p2, p3, p4;
     Mat originImg_left;
@@ -161,19 +161,16 @@ void Lane_Detector::operate(){
 
 	//imshow("canny1", cannyImg1);
 
-	Mat initROI1;
-	Mat initROI2;
+	// Mat initROI1;
+	// Mat initROI2;
 
-	region_of_interest_L(originImg_left, initROI1);
-	region_of_interest_R(originImg_right, initROI2);
+	// region_of_interest_L(originImg_left, initROI1);
+	// region_of_interest_R(originImg_right, initROI2);
 
 	//imshow("initORI1", initROI1);
 	//imshow("initORI2", initROI2);
 
 	if(!left_error){
-		Mat ddd;
-		v_roi(originImg_left, ddd, p1, p2);
-		//imshow("v_roi_check", ddd);
 		v_roi(cannyImg1, initROI1, p1, p2);
 	}
 	else{
@@ -181,7 +178,7 @@ void Lane_Detector::operate(){
 	}
 
 	if(!right_error){
-		v_roi(cannyImg2, initROI2, p3, p4);
+		v_roi(cannyImg2, initROI2, p4, p3);
 	}
 	else{
 		region_of_interest_R(cannyImg2, initROI2);
@@ -207,7 +204,7 @@ void Lane_Detector::operate(){
 	resize(originImg_right, b, Size(640, 480), 0, 0, CV_INTER_LINEAR);
 	hconcat(a, b, c);
 
-	//imshow("result", c);
+	imshow("result", c);
 
 	// output_video << c;
 	if(waitKey(10) == 0){
@@ -335,7 +332,7 @@ bool Lane_Detector::hough_left(Mat& img, Point* p1, Point* p2){
   vector<Vec2f> linesL;
 
   int count = 0, x1 = 0, x2 = 0, y1 = 0, y2 = 0;
-  int threshold = 100;
+  int threshold = 80;
 
   for (int i = 10; i > 0; i--){
     HoughLines(img, linesL, 1, CV_PI / 180, threshold, 0, 0, 0, CV_PI /2);
@@ -412,7 +409,7 @@ bool Lane_Detector::hough_right(Mat& img, Point* p1, Point* p2){
   vector<Vec2f> linesR;
 
   int count = 0, x1 = 0, x2 = 0, y1 = 0, y2 = 0;
-  int threshold = 100;
+  int threshold = 80;
 
   for (int i = 10; i > 0; i--){
     HoughLines(img, linesR, 1, CV_PI / 180, threshold, 0, 0, CV_PI/2, CV_PI);
