@@ -118,13 +118,13 @@ void Lane_Detector::init(){
   t = time(NULL);
   datetime = localtime(&t);
   string s_t = path.append(to_string(datetime->tm_year + 1900)).append("-").append(to_string(datetime->tm_mon + 1)).append("-").append(to_string(datetime->tm_mday)).append("_").append(to_string(datetime->tm_hour)).append(":").append(to_string(datetime->tm_min)).append(":").append(to_string(datetime->tm_sec)).append(".avi");
-
   capture_left = VideoCapture(2);
   capture_right = VideoCapture(1);
   capture_left.set(CV_CAP_PROP_FRAME_WIDTH,320);
   capture_left.set(CV_CAP_PROP_FRAME_HEIGHT,240);
   capture_right.set(CV_CAP_PROP_FRAME_WIDTH,320);
   capture_right.set(CV_CAP_PROP_FRAME_HEIGHT,240);
+
   output_video.open(s_t, VideoWriter::fourcc('X', 'V', 'I', 'D'), 20, Size(1280, 480), true);
   mask = getStructuringElement(MORPH_RECT, Size(3, 3), Point(1, 1));
 

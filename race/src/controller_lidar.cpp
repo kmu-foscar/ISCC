@@ -8,15 +8,17 @@
 #include <race/drive_values.h>
 
 //장애물 인식범위
-#define O_LIMIT 2
+#define O_LIMIT 5
 //장애물간 거리
-#define O_B_LIMIT 0.5
+#define O_B_LIMIT 0.8
 #define O_B_LIMIT_POW O_B_LIMIT * O_B_LIMIT 
 #define O_LIMIT_POW O_LIMIT * O_LIMIT
 #define PI 3.141592
 #define MAX 12345
-#define K_L 1.3
-#define K_R 1.6
+
+//hyepro K_L only 1.3 K_R 1.0 
+#define K_L 1.4
+#define K_R 1.4
 
 ros::Publisher pub;
 race::drive_values msg;
@@ -264,7 +266,7 @@ void calculator(obstacle_detector::Obstacles data)
 		msg.steering = 0;
 	else if(msg.steering > 200)
 		msg.steering = 200;
-	msg.throttle = 1;
+	msg.throttle = 5;
 	
     printf("steering : %d speed : %d\n", msg.steering, 1);
 	pub.publish(msg);
