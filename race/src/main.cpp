@@ -11,8 +11,8 @@
     #define MODE_UTURN 6
     #define MODE_PARKING 7
 
-    ros::Publisher pub, pub2, pub3, pub4, pub5, pub6;
-    ros::Subscriber sub, sub2; 
+    ros::Publisher pub, pub2, pub3, pub4, pub5, pub6, pub7, pub8;
+    ros::Subscriber sub, sub2;
 
     std_msgs::Bool lk_onoff_msg = std_msgs::Bool(); // Lane Keeper
     std:msgs::Bool sc_onoff_msg = std_msgs::Bool(); // Sign Classifier
@@ -20,7 +20,9 @@
     std:msgs::Bool cw_onoff_msg = std_msgs::Bool(); // Crosswalk
     std:msgs::Bool pk_onoff_msg = std_msgs::Bool(); // Parking
     std:msgs::Bool ut_onoff_msg = std_msgs::Bool(); // U-Turn
-    // 
+    std:msgs::Bool so_onoff_msg = std_msgs::Bool(); // Static Obstacle
+    std:msgs::Bool do_onoff_msg = std_msgs::Bool(); // Dynamic Obstacle
+    //
     void signCallback(const race::sign_classes &msg) {
         unsigned char sign_class = msg.sign_class;
         printf("%d\n", sign_class);
@@ -32,6 +34,8 @@
             cw_onoff_msg.data = false;
             pk_onoff_msg.data = false;
             ut_onoff_msg.data = false;
+            so_onoff_msg.data = false;
+            do_onoff_msg.data = false;
         case MODE_CROSSWALK :
             lk_onoff_msg.data = false;
             sc_onoff_msg.data = false;
@@ -39,20 +43,27 @@
             cw_onoff_msg.data = true;
             pk_onoff_msg.data = false;
             ut_onoff_msg.data = false;
+            so_onoff_msg.data = false;
+            do_onoff_msg.data = false;
+            break;
         case MODE_STATIC_OBSTACLE :
             lk_onoff_msg.data = false;
             sc_onoff_msg.data = false;
-            oa_onoff_msg.data = true;
-            cw_onoff_msg.data = false;
-            pk_onoff_msg.data = false;
-            ut_onoff_msg.data = false;        
-        case MODE_DYNAMIC_OBSTACLE : 
-            lk_onoff_msg.data = false;
-            sc_onoff_msg.data = false;
-            oa_onoff_msg.data = true;
+            oa_onoff_msg.data = false;
             cw_onoff_msg.data = false;
             pk_onoff_msg.data = false;
             ut_onoff_msg.data = false;
+            so_onoff_msg.data = true;
+            do_onoff_msg.data = false;
+        case MODE_DYNAMIC_OBSTACLE :
+            lk_onoff_msg.data = false;
+            sc_onoff_msg.data = false;
+            oa_onoff_msg.data = false;
+            cw_onoff_msg.data = false;
+            pk_onoff_msg.data = false;
+            ut_onoff_msg.data = false;
+            so_onoff_msg.data = false;
+            do_onoff_msg.data = true;
         case MODE_NARROW :
             lk_onoff_msg.data = false;
             sc_onoff_msg.data = false;
@@ -60,6 +71,8 @@
             cw_onoff_msg.data = false;
             pk_onoff_msg.data = false;
             ut_onoff_msg.data = false;
+            so_onoff_msg.data = false;
+            do_onoff_msg.data = false;
         case MODE_CURVE :
             lk_onoff_msg.data = false;
             sc_onoff_msg.data = false;
@@ -67,6 +80,8 @@
             cw_onoff_msg.data = false;
             pk_onoff_msg.data = false;
             ut_onoff_msg.data = false;
+            so_onoff_msg.data = false;
+            do_onoff_msg.data = false;
         case MODE_UTURN :
             lk_onoff_msg.data = false;
             sc_onoff_msg.data = false;
@@ -74,6 +89,8 @@
             cw_onoff_msg.data = false;
             pk_onoff_msg.data = false;
             ut_onoff_msg.data = true;
+            so_onoff_msg.data = false;
+            do_onoff_msg.data = false;
         case MODE_PARKING :
             lk_onoff_msg.data = false;
             sc_onoff_msg.data = false;
@@ -81,6 +98,8 @@
             cw_onoff_msg.data = false;
             pk_onoff_msg.data = true;
             ut_onoff_msg.data = false;
+            so_onoff_msg.data = false;
+            do_onoff_msg.data = false;
         default :
             pub.publish(lk_onoff_msg);
             pub2.publish(sc_onoff_msg);
@@ -88,6 +107,8 @@
             pub4.publish(cw_onoff_msg);
             pub5.publish(pk_onoff_msg);
             pub6.publish(ut_onoff_msg);
+            pub7.publish(so_onoff_msg);
+            pub8.publish(do_onoff_msg);
         }
     }
     void returnCallback(const race::Bool &msg) {
@@ -98,7 +119,7 @@
         }
         // TODO later : implementaton for exception when each module return false because of error
     }
-    int main(int argc, char** argv) 
+    int main(int argc, char** argv)
     {
         ros::init(argc, argv, "Central_Controller");
         ros::NodeHandle nh;
@@ -110,6 +131,8 @@
         pub4 = nh.advertise<std_msgs::Bool> ("cw_onoff", 1);
         pub5 = nh.advertise<std_msgs::Bool> ("pk_onoff", 1);
         pub6 = nh.advertise<std_msgs::Bool> ("ut_onoff", 1);
-        
+        pub7 = nh.advertise<std_msgs::Bool> ("so_onoff", 1);
+        pub8 = nh.advertise<std_msgs::Bool> ("do_onoff", 1);
+
         ros::spin();
     }
