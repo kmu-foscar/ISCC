@@ -36,6 +36,7 @@
             ut_onoff_msg.data = false;
             so_onoff_msg.data = false;
             do_onoff_msg.data = false;
+            break;
         case MODE_CROSSWALK :
             lk_onoff_msg.data = false;
             sc_onoff_msg.data = false;
@@ -55,6 +56,7 @@
             ut_onoff_msg.data = false;
             so_onoff_msg.data = true;
             do_onoff_msg.data = false;
+            break;
         case MODE_DYNAMIC_OBSTACLE :
             lk_onoff_msg.data = false;
             sc_onoff_msg.data = false;
@@ -64,6 +66,7 @@
             ut_onoff_msg.data = false;
             so_onoff_msg.data = false;
             do_onoff_msg.data = true;
+            break;
         case MODE_NARROW :
             lk_onoff_msg.data = false;
             sc_onoff_msg.data = false;
@@ -73,6 +76,7 @@
             ut_onoff_msg.data = false;
             so_onoff_msg.data = false;
             do_onoff_msg.data = false;
+            break;
         case MODE_CURVE :
             lk_onoff_msg.data = false;
             sc_onoff_msg.data = false;
@@ -82,6 +86,7 @@
             ut_onoff_msg.data = false;
             so_onoff_msg.data = false;
             do_onoff_msg.data = false;
+            break;
         case MODE_UTURN :
             lk_onoff_msg.data = false;
             sc_onoff_msg.data = false;
@@ -91,6 +96,7 @@
             ut_onoff_msg.data = true;
             so_onoff_msg.data = false;
             do_onoff_msg.data = false;
+            break;
         case MODE_PARKING :
             lk_onoff_msg.data = false;
             sc_onoff_msg.data = false;
@@ -100,16 +106,17 @@
             ut_onoff_msg.data = false;
             so_onoff_msg.data = false;
             do_onoff_msg.data = false;
-        default :
-            pub.publish(lk_onoff_msg);
-            pub2.publish(sc_onoff_msg);
-            pub3.publish(oa_onoff_msg);
-            pub4.publish(cw_onoff_msg);
-            pub5.publish(pk_onoff_msg);
-            pub6.publish(ut_onoff_msg);
-            pub7.publish(so_onoff_msg);
-            pub8.publish(do_onoff_msg);
+            break;
         }
+
+        pub.publish(lk_onoff_msg);
+        pub2.publish(sc_onoff_msg);
+        pub3.publish(oa_onoff_msg);
+        pub4.publish(cw_onoff_msg);
+        pub5.publish(pk_onoff_msg);
+        pub6.publish(ut_onoff_msg);
+        pub7.publish(so_onoff_msg);
+        pub8.publish(do_onoff_msg);
     }
     void returnCallback(const race::Bool &msg) {
         bool return_msg = msg.data;
