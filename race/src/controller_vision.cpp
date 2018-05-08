@@ -48,9 +48,12 @@ void do_onoffCallback(const std_msgs::Bool &msg);
 void so_onoffCallback(const std_msgs::Bool &msg);
 void ut_onoffCallback(const std_msgs::Bool &msg);
 void pk_onoffCallback(const std_msgs::Bool &msg);
-void doCallback(const obstacle_detector::Obstacles data); // dynamic obstacle callback
+void obstacleCallback(const obstacle_detector::Obstacles data); // dynamic obstacle callback
 void keep_lane_advanced(race::drive_values* control_msg); // base mode
 void keep_lane(race::drive_values* control_msg); // parking, Dynamic obstacle, static obstacle, Uturn, Crosswalk  
+void do_operate();
+void pk_operate();
+
 float cal_lookahead_op_error();
 
 int main(int argc, char** argv) {
@@ -66,7 +69,7 @@ int main(int argc, char** argv) {
     ut_onoff_sub = nh.subscirber("ut_onoff_msg", ut_onoffCallback);
     pk_onoff_sub = nh.subscirber("pk_onoff_msg", pk_onoffCallback);
     
-    do_sub = nh.subscribe("raw_obstacles", 1, doCallback);
+    do_sub = nh.subscribe("raw_obstacles", 1, obstacleCallback);
 
     control_pub = nh.advertise<race::drive_values>("Control", 1000);
     return_sig_pub = nh.advertise<std_msgs::Int16>("return_signal", 1);
@@ -89,15 +92,16 @@ int main(int argc, char** argv) {
         }
         else if(so_onoff) {
             ld->operate();
+            keep_lane();
             // Hanjeong
         }
         else if(ut_onoff) {
             ld->operate();
+            keep_lane();
             // Seungyun
         }
         else if(pk_onoff) {
-            ld->operate();
-            // Me & Seungyun
+            pk_operate();
         }
 
         control_pub.publish(control_msg);
@@ -268,3 +272,56 @@ void keep_lane(race::drive_values* control_msg) {
     control_msg->steering = steering;
     control_msg->throttle = speed;
 }
+#define PARKING_STATE_1_THRESHHOLD 100
+#define PARKING_STATE_2_THRESHHOLD 100
+#define PARKING_STATE_3_THRESHHOLD 100
+#define PARKING_STATE_4_THRESHHOLD 100
+#define PARKING_STATE_5_THRESHHOLD 100
+
+
+void pk_operate() {
+    switch (parking_state) {
+    case 0 : 
+    if(ld->parking_point2.y < PARKING_STATE_1_THRESHHOLD) {
+        parking_state = 1;
+    }
+    ld->operate();
+    keep_lane();
+    break;
+    case 1 :
+    // TODO : condition reconsideration
+    if(!ld->is_left_error && !ld->is_right_error){
+        parking_state = 2;
+    }
+    control_msg.steering = 200; // right max steer
+    break;
+    case 2 :
+    if(ld->stop_parking.y > PARKING_STATE_2_THRESHHOLD) {
+        parking_state = 3;
+    }
+    ld->operate();
+    keep_lane();
+    break;
+    }
+    case 3 :
+    ros::Duration(10).sleep(); 
+    parking_state = 4;
+    break;
+    case 4 :
+    if(ld->stop_parking.y < PARKING_STATE_4_THRESHHOLD) {
+        parking_state = 5;
+    }
+    ld->operate();
+    keep_lane();
+    control_msg.throttle = -5;
+    case 5 :
+    // TODO : condition reconsideration
+    if(!ld->is_left_error && !ld->is_right_error){
+        return_msg.data = MODE_PARKING;
+        return_sig_pub.publish(return_msg);
+    }
+    control_msg.steering = 200; // right max steer 
+    control_msg.throttle = -5;
+    break;
+}
+
