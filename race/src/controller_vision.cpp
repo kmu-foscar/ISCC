@@ -61,12 +61,27 @@ int main(int argc, char** argv) {
     ld->init();
     la->init();
     while(ros::ok()) {
-        
-        ld->operate();
-        la->operate(ld->originImg_left, ld->originImg_right);
+        if(lk_onoff) {
+            ld->operate();
+            la->operate(ld->originImg_left, ld->originImg_right);
+            keep_lane_advanced(&control_msg);
+        }
+        else if(cw_onoff) {
+            
+        }
+        else if(do_onoff) {
 
-        keep_lane_advanced(&control_msg);
-        
+        }
+        else if(so_onoff) {
+
+        }
+        else if(ut_onoff) {
+
+        }
+        else if(pk_onoff) {
+
+        }
+
         control_pub.publish(control_msg);
         ros::spinOnce();
     }
