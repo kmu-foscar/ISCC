@@ -3,6 +3,7 @@
 #include "config.h"
 #include <algorithm>
 #include <ros/ros.h>
+#include <obstacle_detector/Obstacles.h>
 #include <race/drive_values.h>
 #include <std_msgs/Bool.h>
 #include <signal.h>
@@ -67,19 +68,19 @@ int main(int argc, char** argv) {
             keep_lane_advanced(&control_msg);
         }
         else if(cw_onoff) {
-            
+            ld->operate();
         }
         else if(do_onoff) {
-
+            ld->operate();
         }
         else if(so_onoff) {
-
+            ld->operate();
         }
         else if(ut_onoff) {
-
+            ld->operate();
         }
         else if(pk_onoff) {
-
+            ld->operate();
         }
 
         control_pub.publish(control_msg);
