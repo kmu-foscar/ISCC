@@ -15,13 +15,22 @@
 Lane_Detector* ld;
 Look_Ahead* la;
 race::drive_values control_msg;
+std_msgs::Int16 return_msg;
 ros::Subscriber sub; 
+ros::Subscriber do_sub;
 ros::Publisher control_pub;
 ros::Publisher return_sig_pub;
+
+// variables for dynamic obstacle 
+int do_cnt = 0;
+int obstacle_size;
+
+// variables for lane keeper
 float p_steering = -0.3f;
 float p_steering_curve = 20.f;
 float p_lookahead_curve = 10.f;
 float p_lookahead = 0.05f;
+
 int steering;
 int throttle;
 
@@ -39,7 +48,7 @@ void do_onoffCallback(const std_msgs::Bool &msg);
 void so_onoffCallback(const std_msgs::Bool &msg);
 void ut_onoffCallback(const std_msgs::Bool &msg);
 void pk_onoffCallback(const std_msgs::Bool &msg);
-
+void doCallback(const obstacle_detector::Obstacles data); // dynamic obstacle callback
 void keep_lane_advanced(race::drive_values* control_msg); // base mode
 void keep_lane(race::drive_values* control_msg); // parking, Dynamic obstacle, static obstacle, Uturn, Crosswalk  
 float cal_lookahead_op_error();
@@ -57,6 +66,8 @@ int main(int argc, char** argv) {
     ut_onoff_sub = nh.subscirber("ut_onoff_msg", ut_onoffCallback);
     pk_onoff_sub = nh.subscirber("pk_onoff_msg", pk_onoffCallback);
     
+    do_sub = nh.subscribe("raw_obstacles", 1, doCallback);
+
     control_pub = nh.advertise<race::drive_values>("Control", 1000);
     return_sig_pub = nh.advertise<std_msgs::Int16>("return_signal", 1);
     ld->init();
@@ -69,18 +80,24 @@ int main(int argc, char** argv) {
         }
         else if(cw_onoff) {
             ld->operate();
+            // Nayeon 
         }
         else if(do_onoff) {
             ld->operate();
+            keep_lane();
+            do_operate();
         }
         else if(so_onoff) {
             ld->operate();
+            // Hanjeong
         }
         else if(ut_onoff) {
             ld->operate();
+            // Seungyun
         }
         else if(pk_onoff) {
             ld->operate();
+            // Me & Seungyun
         }
 
         control_pub.publish(control_msg);
@@ -109,6 +126,37 @@ void ut_onoffCallback(const std_msgs::Bool &msg) {
 void pk_onoffCallback(const std_msgs::Bool &msg) {
     pk_onoff = msg.data;
 }
+
+bool isExist(int do_cnt) {
+  if(do_cnt > 80) 
+  	return false;
+  return true;
+}
+void obstacleCallback(const obstacle_detector::Obstacles data) {
+    if(!do_onoff) 
+        return;
+    obstacle_size = data.circles.size();
+}
+void do_operate() {
+  bool exist_obstacle;
+  obstacle_size > 0? exist_obstacle = true : exist_obstacle = false;
+
+  if(exist_obstacle) {
+   	printf("%s\n" , "stop!!");
+	do_cnt = 0;
+    control_msg.throttle = 0;
+  }
+  else do_cnt++;
+	
+  if(!isExist(do_cnt)) {
+	do_cnt = 0;
+    printf("%s\n" , "go!!");
+    return_msg.data = MODE_DYNAMIC_OBSTACLE;
+    return_sig_pub.publish(return_msg);
+    control_msg.throttle = 7;
+  }
+}
+
 // lookahead 포함 lane keeping 함수.
 void keep_lane_advanced(race::drive_values* control_msg) {
     int speed = MAX_SPEED;
