@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <ros/ros.h>
 #include <race/drive_values.h>
-#include <race/control_variables.h>
+#include <std_msgs/Bool.h>
 #include <signal.h>
 #define CENTER_POINT 690
 #define CENTER_POINT_LA 750
@@ -13,34 +13,55 @@ Look_Ahead* la;
 race::drive_values control_msg;
 ros::Subscriber sub; 
 ros::Publisher control_pub;
-#include <std_msgs/Bool.h>
-bool onoff = true;
+ros::Publisher return_sig_pub;
 float p_steering = -0.3f;
 float p_steering_curve = 20.f;
 float p_lookahead_curve = 10.f;
 float p_lookahead = 0.05f;
 int steering;
 int throttle;
-int test_speed = 5;
 
-bool onoff = true;
-void testerCallback(const race::control_variables &msg);
-void onoffCallback(const std_msgs::Bool &msg);
-void generate_control_msg(race::drive_values* control_msg);
+bool lk_onoff = true;
+bool cw_onoff = false;
+bool do_onoff = false;
+bool so_onoff = false;
+bool ut_onoff = false;
+bool pk_onoff = false;
+int parking_state = 0;
+
+void lk_onoffCallback(const std_msgs::Bool &msg);
+void cw_onoffCallback(const std_msgs::Bool &msg);
+void do_onoffCallback(const std_msgs::Bool &msg);
+void so_onoffCallback(const std_msgs::Bool &msg);
+void ut_onoffCallback(const std_msgs::Bool &msg);
+void pk_onoffCallback(const std_msgs::Bool &msg);
+
+void keep_lane_advanced(race::drive_values* control_msg); // base mode
+void keep_lane(race::drive_values* control_msg); // parking, Dynamic obstacle, static obstacle, Uturn, Crosswalk  
 float cal_lookahead_op_error();
+
 int main(int argc, char** argv) {
     ros::init(argc, argv, "Lane_Keeper");
     ros::NodeHandle nh;
     
     ld = new Lane_Detector();
     la = new Look_Ahead();
-    sub = nh.subscribe("control_variables", 1000, testerCallback);
+    lk_onoff_sub = nh.subscirber("lk_onoff_msg", lk_onoffCallback);
+    cw_onoff_sub = nh.subscirber("cw_onoff_msg", cw_onoffCallback);
+    do_onoff_sub = nh.subscirber("do_onoff_msg", do_onoffCallback);
+    so_onoff_sub = nh.subscirber("so_onoff_msg", so_onoffCallback);    
+    ut_onoff_sub = nh.subscirber("ut_onoff_msg", ut_onoffCallback);
+    pk_onoff_sub = nh.subscirber("pk_onoff_msg", pk_onoffCallback);
+    
     control_pub = nh.advertise<race::drive_values>("Control", 1000);
+    return_sig_pub = nh.advertise<std_msgs::Bool>("return_signal", 1);
     ld->init();
     la->init();
-    while(ros::ok() && onoff) {
+    while(ros::ok()) {
+        
         ld->operate();
         la->operate(ld->originImg_left, ld->originImg_right);
+
         generate_control_msg(&control_msg);
         control_pub.publish(control_msg);
         ros::spinOnce();
@@ -50,15 +71,26 @@ int main(int argc, char** argv) {
     return 0;
 }
 
-void testerCallback(const race::control_variables &msg) {
-    p_steering = msg.p_steering;
-	p_steering_curve = msg.p_steering_curve;
-    test_speed = msg.test_speed;
+void lk_onoffCallback(const std_msgs::Bool &msg) {
+    lk_onoff = msg.data;
 }
-void onoffCallback(const std_msgs::Bool &msg) {
-    onoff = msg.data;
+void cw_onoffCallback(const std_msgs::Bool &msg) {
+    cw_onoff = msg.data;
 }
-void generate_control_msg(race::drive_values* control_msg) {
+void do_onoffCallback(const std_msgs::Bool &msg) {
+    do_onoff = msg.data;
+}
+void so_onoffCallback(const std_msgs::Bool &msg) {
+    so_onoff = msg.data;
+}
+void ut_onoffCallback(const std_msgs::Bool &msg) {
+    ut_onoff = msg.data;
+}
+void pk_onoffCallback(const std_msgs::Bool &msg) {
+    pk_onoff = msg.data;
+}
+// lookahead 포함 lane keeping 함수.
+void keep_lane_advanced(race::drive_values* control_msg) {
     int speed = MAX_SPEED;
     float op_error;
     Point op;
@@ -138,4 +170,33 @@ float cal_lookahead_op_error() {
         error_op = 0;
     }
     return error_op; 
+}
+
+void keep_lane(race::drive_values* control_msg) {
+    int speed = MAX_SPEED / 2;
+    float op_error;
+    Point op;
+    Point pa_1 = ld->p1;
+    Point pa_2 = ld->p2;
+    Point pb_1 = ld->p3;
+    Point pb_2 = ld->p4;
+    
+    pb_1.x += 640;
+    pb_2.x += 640;
+
+    if(ld->get_intersectpoint(pa_1, pa_2, pb_1, pb_2, &op)) {
+        float error_steering = CENTER_POINT - op.x;
+        steering = p_steering * error_steering * (float)(1/(float)speed) * 5; 
+    } 
+    else if(ld->is_left_error()) {
+        steering = -p_steering_curve / ld->get_right_slope() * (float)(1/(float)speed) * 5;
+    }
+    else if(ld->is_right_error()) {
+        steering = p_steering_curve / ld->get_left_slope() * (float)(1/(float)speed) * 5;
+    }
+    
+    steering = min(max(steering, -100), 100);
+    steering += 100;
+    control_msg->steering = steering;
+    control_msg->throttle = speed;
 }
