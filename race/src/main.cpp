@@ -36,6 +36,7 @@
             ut_onoff_msg.data = false;
             so_onoff_msg.data = false;
             do_onoff_msg.data = false;
+            break;
         case MODE_CROSSWALK :
             lk_onoff_msg.data = false;
             sc_onoff_msg.data = false;
@@ -45,6 +46,7 @@
             ut_onoff_msg.data = false;
             so_onoff_msg.data = false;
             do_onoff_msg.data = false;
+            break;
         case MODE_STATIC_OBSTACLE :
             lk_onoff_msg.data = false;
             sc_onoff_msg.data = false;
@@ -54,6 +56,7 @@
             ut_onoff_msg.data = false;
             so_onoff_msg.data = true;
             do_onoff_msg.data = false;
+            break;
         case MODE_DYNAMIC_OBSTACLE :
             lk_onoff_msg.data = false;
             sc_onoff_msg.data = false;
@@ -63,6 +66,7 @@
             ut_onoff_msg.data = false;
             so_onoff_msg.data = false;
             do_onoff_msg.data = true;
+            break;
         case MODE_NARROW :
             lk_onoff_msg.data = false;
             sc_onoff_msg.data = false;
@@ -72,6 +76,7 @@
             ut_onoff_msg.data = false;
             so_onoff_msg.data = false;
             do_onoff_msg.data = false;
+            break;
         case MODE_CURVE :
             lk_onoff_msg.data = false;
             sc_onoff_msg.data = false;
@@ -81,6 +86,7 @@
             ut_onoff_msg.data = false;
             so_onoff_msg.data = false;
             do_onoff_msg.data = false;
+            break;
         case MODE_UTURN :
             lk_onoff_msg.data = false;
             sc_onoff_msg.data = false;
@@ -90,6 +96,7 @@
             ut_onoff_msg.data = true;
             so_onoff_msg.data = false;
             do_onoff_msg.data = false;
+            break;
         case MODE_PARKING :
             lk_onoff_msg.data = false;
             sc_onoff_msg.data = false;
@@ -99,6 +106,7 @@
             ut_onoff_msg.data = false;
             so_onoff_msg.data = false;
             do_onoff_msg.data = false;
+            break;
         }
 
         pub.publish(lk_onoff_msg);
