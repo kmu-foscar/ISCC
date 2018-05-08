@@ -1,13 +1,16 @@
 #include "Lane_Detector.hpp"
 #include "Look_Ahead.hpp"
+#include "config.h"
 #include <algorithm>
 #include <ros/ros.h>
 #include <race/drive_values.h>
 #include <std_msgs/Bool.h>
 #include <signal.h>
+
 #define CENTER_POINT 690
 #define CENTER_POINT_LA 750
 #define MAX_SPEED 12
+
 Lane_Detector* ld;
 Look_Ahead* la;
 race::drive_values control_msg;
@@ -54,7 +57,7 @@ int main(int argc, char** argv) {
     pk_onoff_sub = nh.subscirber("pk_onoff_msg", pk_onoffCallback);
     
     control_pub = nh.advertise<race::drive_values>("Control", 1000);
-    return_sig_pub = nh.advertise<std_msgs::Bool>("return_signal", 1);
+    return_sig_pub = nh.advertise<std_msgs::Int16>("return_signal", 1);
     ld->init();
     la->init();
     while(ros::ok()) {
@@ -62,7 +65,8 @@ int main(int argc, char** argv) {
         ld->operate();
         la->operate(ld->originImg_left, ld->originImg_right);
 
-        generate_control_msg(&control_msg);
+        keep_lane_advanced(&control_msg);
+        
         control_pub.publish(control_msg);
         ros::spinOnce();
     }

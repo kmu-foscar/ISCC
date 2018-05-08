@@ -1,15 +1,8 @@
     #include <ros/ros.h>
     #include <race/sign_classes.h>
     #include <std_msgs/Bool.h>
-
-    #define MODE_BASE 0 // Lane Keeping Mode
-    #define MODE_CROSSWALK 1
-    #define MODE_STATIC_OBSTACLE 2
-    #define MODE_DYNAMIC_OBSTACLE 3
-    #define MODE_NARROW 4
-    #define MODE_CURVE 5
-    #define MODE_UTURN 6
-    #define MODE_PARKING 7
+    #include <std_msgs/Int16.h>
+    #include "config.h"
 
     ros::Publisher pub, pub2, pub3, pub4, pub5, pub6, pub7, pub8;
     ros::Subscriber sub, sub2;
@@ -22,21 +15,23 @@
     std:msgs::Bool ut_onoff_msg = std_msgs::Bool(); // U-Turn
     std:msgs::Bool so_onoff_msg = std_msgs::Bool(); // Static Obstacle
     std:msgs::Bool do_onoff_msg = std_msgs::Bool(); // Dynamic Obstacle
+    
+    int return_sig;
     //
+    void publish_msgs() {
+        pub.publish(lk_onoff_msg);
+        pub2.publish(sc_onoff_msg);
+        pub3.publish(oa_onoff_msg);
+        pub4.publish(cw_onoff_msg);
+        pub5.publish(pk_onoff_msg);
+        pub6.publish(ut_onoff_msg);
+        pub7.publish(so_onoff_msg);
+        pub8.publish(do_onoff_msg);
+    }
     void signCallback(const race::sign_classes &msg) {
         unsigned char sign_class = msg.sign_class;
         printf("%d\n", sign_class);
         switch (sign_class) {
-        case MODE_BASE :
-            lk_onoff_msg.data = true;
-            sc_onoff_msg.data = true;
-            oa_onoff_msg.data = false;
-            cw_onoff_msg.data = false;
-            pk_onoff_msg.data = false;
-            ut_onoff_msg.data = false;
-            so_onoff_msg.data = false;
-            do_onoff_msg.data = false;
-            break;
         case MODE_CROSSWALK :
             lk_onoff_msg.data = false;
             sc_onoff_msg.data = false;
@@ -108,23 +103,22 @@
             do_onoff_msg.data = false;
             break;
         }
-
-        pub.publish(lk_onoff_msg);
-        pub2.publish(sc_onoff_msg);
-        pub3.publish(oa_onoff_msg);
-        pub4.publish(cw_onoff_msg);
-        pub5.publish(pk_onoff_msg);
-        pub6.publish(ut_onoff_msg);
-        pub7.publish(so_onoff_msg);
-        pub8.publish(do_onoff_msg);
+        publish_msgs();
     }
-    void returnCallback(const race::Bool &msg) {
-        bool return_msg = msg.data;
-        if(return_msg) {
-            sc_onoff_msg = true;
-            pub2.publish(sc_onoff_msg);
+    void returnCallback(const std_msgs::Int16 &msg) {
+        return_sig = msg.data;
+        if(return_sig > 0) {
+            lk_onoff_msg.data = true;
+            sc_onoff_msg.data = true;
+            oa_onoff_msg.data = false;
+            cw_onoff_msg.data = false;
+            pk_onoff_msg.data = false;
+            ut_onoff_msg.data = false;
+            so_onoff_msg.data = false;
+            do_onoff_msg.data = false;
+            break;
         }
-        // TODO later : implementaton for exception when each module return false because of error
+        publish_msgs();
     }
     int main(int argc, char** argv)
     {
