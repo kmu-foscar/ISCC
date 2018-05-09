@@ -116,7 +116,6 @@
             ut_onoff_msg.data = false;
             so_onoff_msg.data = false;
             do_onoff_msg.data = false;
-            break;
         }
         publish_msgs();
     }

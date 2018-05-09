@@ -82,12 +82,12 @@ int main(int argc, char** argv) {
     
     ld = new Lane_Detector();
     la = new Look_Ahead();
-    lk_onoff_sub = nh.subscribe("lk_onoff_msg", lk_onoffCallback);
-    cw_onoff_sub = nh.subscribe("cw_onoff_msg", cw_onoffCallback);
-    do_onoff_sub = nh.subscribe("do_onoff_msg", do_onoffCallback);
-    so_onoff_sub = nh.subscribe("so_onoff_msg", so_onoffCallback);    
-    ut_onoff_sub = nh.subscribe("ut_onoff_msg", ut_onoffCallback);
-    pk_onoff_sub = nh.subscribe("pk_onoff_msg", pk_onoffCallback);
+    lk_onoff_sub = nh.subscribe("lk_onoff_msg", 1, lk_onoffCallback);
+    cw_onoff_sub = nh.subscribe("cw_onoff_msg", 1, cw_onoffCallback);
+    do_onoff_sub = nh.subscribe("do_onoff_msg", 1, do_onoffCallback);
+    so_onoff_sub = nh.subscribe("so_onoff_msg", 1, so_onoffCallback);    
+    ut_onoff_sub = nh.subscribe("ut_onoff_msg", 1, ut_onoffCallback);
+    pk_onoff_sub = nh.subscribe("pk_onoff_msg", 1, pk_onoffCallback);
     
     do_sub = nh.subscribe("raw_obstacles", 1, obstacleCallback);
 
@@ -160,12 +160,12 @@ void obstacleCallback(const obstacle_detector::Obstacles data) {
     obstacles_data = data;
 }
 void ut_operate() {
+    bool flag = false;
+    geometry_msgs::Point s;
     switch (uturn_state) {
     case 0 :
     ld->operate();
-    keep_lane();
-    bool flag = false;
-    geometry_msgs::Point s;
+    keep_lane(&control_msg);    
     for(int i = 0; i < obstacle_size; i++) {
         if(obstacles_data.circles[i].center.y > -0.55 && obstacles_data.circles[i].center.y < 0.55 && obstacles_data.circles[i].center.x > 0.015 && obstacles_data.circles[i].center.x < 5) {
             if(!flag || s.x > obstacles_data.circles[i].center.x){
@@ -254,31 +254,7 @@ void keep_lane_advanced(race::drive_values* control_msg) {
     control_msg->steering = steering;
     control_msg->throttle = speed;
 }
-float cal_lookahead_op_error() {
-    Point op;
-    Point pa_1 = ld->p1;
-    Point pa_2 = ld->p2;
-    Point pb_1 = ld->p3;
-    Point pb_2 = ld->p4;
-    float error_op;
-    pa_1.x += 200;
-    pa_2.x += 200;
-    pb_1.x += 640;
-    pb_2.x += 640;
-    if(la->get_intersectpoint(pa_1, pa_2, pb_1, pb_2, &op)) {
-        error_op = CENTER_POINT_LA - op.x;
-    }
-    else if(ld->is_left_error()) {
-        error_op = CENTER_POINT_LA - p_lookahead_curve / la->get_right_slope();
-    }
-    else if(ld->is_right_error()) {
-        error_op = CENTER_POINT_LA + p_lookahead_curve / la->get_left_slope();
-    }
-    else {
-        error_op = 0;
-    }
-    return error_op; 
-}
+
 float cal_lookahead_op_error() {
     Point op;
     Point pa_1 = ld->p1;
