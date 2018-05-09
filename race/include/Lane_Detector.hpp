@@ -615,7 +615,7 @@ void Lane_Detector::hough_to_cluster()
 			}
 		}
 
-		cout << "cluster = " << clusterCount << endl;
+		//cout << "cluster = " << clusterCount << endl;
 	}
 }
 

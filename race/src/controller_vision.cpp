@@ -19,6 +19,7 @@
 #define PARKING_STATE_4_THRESHOLD 100
 #define PARKING_STATE_5_THRESHOLD 100
 #define UTURN_THRESHOLD 1.5
+#define CROSSWALK_THRESHOLD 50
 using namespace std;
 
 Lane_Detector* ld;
@@ -60,6 +61,8 @@ bool ut_onoff = false;
 bool pk_onoff = false;
 int parking_state;
 int uturn_state;
+int crosswalk_state;
+
 bool is_parked;
 void lk_onoffCallback(const std_msgs::Bool &msg);
 void cw_onoffCallback(const std_msgs::Bool &msg);
@@ -74,6 +77,7 @@ void keep_lane(race::drive_values* control_msg); // parking, Dynamic obstacle, s
 void do_operate();
 void pk_operate();
 void ut_operate();
+void cw_operate();
 float cal_lookahead_op_error();
 
 int main(int argc, char** argv) {
@@ -106,8 +110,7 @@ int main(int argc, char** argv) {
         }
         else if(cw_onoff) {
 			printf("crosswalk_mode\n");
-            // ld->operate();
-            // Nayeon 
+			cw_operate();
         }
         else if(do_onoff) {
 			printf("dynamic_obstacle_mode\n");
@@ -224,7 +227,97 @@ void do_operate() {
     control_msg.throttle = 7;
   }
 }
+void cw_operate() {
+	switch(crosswalk_state) {
+	case 0 :
+	ld->operate();
+	keep_lane(&control_msg);
+	ld->stop_line();
+	if(ld->stop_y >= CROSSWALK_THRESHOLD){
+		crosswalk_state = 1;
+		control_msg.throttle = 0;
+		begin = clock();
+	}
+	break;
 
+	case 1 :
+	end = clock();
+	if((end - begin)/CLOCKS_PER_SEC >= 3.f) {
+		return_msg.data = MODE_CROSSWALK;
+        return_sig_pub.publish(return_msg);
+	}
+	break;
+	}
+}
+void pk_operate() {
+    switch (parking_state) {
+    case -1:
+    end = clock();
+    if((end - begin)/CLOCKS_PER_SEC >= 2.5f) {
+        if(is_parked){
+            parking_state = 5;
+        }
+        parking_state = 1;
+    }
+    break;
+
+    case 0 : 
+    ld->parking_init();
+    ld->operate();
+    keep_lane(&control_msg);
+    if(ld->parking_point2.y < PARKING_STATE_1_THRESHOLD) {
+        parking_state = -1;
+	    ld->parking_state = 1;
+        begin = clock();
+        control_msg.steering = 200; // right max steer
+        control_msg.throttle = 5;
+    }
+    break;
+
+    case 1 :
+
+    ld->operate();
+    if(!ld->is_left_error() && !ld->is_right_error()){
+        parking_state = 2;
+    }
+    break;
+    case 2 :
+    ld->operate();
+    keep_lane(&control_msg);
+    if(ld->stop_parking.y > PARKING_STATE_2_THRESHOLD) {
+        control_msg.throttle = 0;
+        is_parked = true;
+        parking_state = 3;
+    }
+    break;
+
+    case 3 :
+    ros::Duration(10).sleep(); 
+    parking_state = 4;
+    break;
+
+    case 4 :
+    ld->operate();
+    keep_lane(&control_msg);
+    control_msg.throttle = -5;
+    if(ld->stop_parking.y < PARKING_STATE_4_THRESHOLD) {
+        parking_state = -1;
+        begin = clock();
+        control_msg.steering = 200; // right max steer
+        control_msg.throttle = -5;
+    }
+    break;
+
+    case 5 :
+    ld->operate();
+    if(!ld->is_left_error() && !ld->is_right_error()){
+        return_msg.data = MODE_PARKING;
+        return_sig_pub.publish(return_msg);
+        ld->parking_release();
+    }
+    break;    
+    }
+}
 // lookahead 포함 lane keeping 함수.
 void keep_lane_advanced(race::drive_values* control_msg) {
     int speed = MAX_SPEED;
@@ -314,72 +407,5 @@ void keep_lane(race::drive_values* control_msg) {
 }
 
 
-void pk_operate() {
-    switch (parking_state) {
-    case -1:
-    end = clock();
-    if((end - begin)/CLOCKS_PER_SEC >= 2.5f) {
-        if(is_parked){
-            parking_state = 5;
-        }
-        parking_state = 1;
-    }
-    break;
 
-    case 0 : 
-    ld->parking_init();
-    ld->operate();
-    keep_lane(&control_msg);
-    if(ld->parking_point2.y < PARKING_STATE_1_THRESHOLD) {
-        parking_state = -1;
-        begin = clock();
-        control_msg.steering = 200; // right max steer
-        control_msg.throttle = 5;
-    }
-    break;
-
-    case 1 :
-    ld->operate();
-    if(!ld->is_left_error() && !ld->is_right_error()){
-        parking_state = 2;
-    }
-    break;
-
-    case 2 :
-    ld->operate();
-    keep_lane(&control_msg);
-    if(ld->stop_parking.y > PARKING_STATE_2_THRESHOLD) {
-        control_msg.throttle = 0;
-        is_parked = true;
-        parking_state = 3;
-    }
-    break;
-
-    case 3 :
-    ros::Duration(10).sleep(); 
-    parking_state = 4;
-    break;
-
-    case 4 :
-    ld->operate();
-    keep_lane(&control_msg);
-    control_msg.throttle = -5;
-    if(ld->stop_parking.y < PARKING_STATE_4_THRESHOLD) {
-        parking_state = -1;
-        begin = clock();
-        control_msg.steering = 200; // right max steer
-        control_msg.throttle = -5;
-    }
-    break;
-
-    case 5 :
-    ld->operate();
-    if(!ld->is_left_error() && !ld->is_right_error()){
-        return_msg.data = MODE_PARKING;
-        return_sig_pub.publish(return_msg);
-        ld->parking_release();
-    }
-    break;    
-    }
-}
 
