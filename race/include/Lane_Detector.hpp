@@ -220,7 +220,7 @@ void Lane_Detector::operate() {
 	line(originImg_left, p1, p2, COLOR_RED, 4, CV_AA);
 	line(originImg_right, p3, p4, COLOR_RED, 4, CV_AA);
 
-	cout << p1.x << " " << p1.y << " " << p2.x << " " << p2.y << endl;
+	//cout << p1.x << " " << p1.y << " " << p2.x << " " << p2.y << endl;
 
 	left_slope = get_slope(p1, p2);
 	right_slope = get_slope(p3, p4);
@@ -549,7 +549,7 @@ void Lane_Detector::hough_to_cluster()
 		cluster[i].ey = 0;
 	}
 
-	HoughLines(canny_park, lines_out_park, 1, CV_PI / 180, h_threshold); // left, right에서는 min, max theta 정해줌
+	HoughLines(canny_park, lines_out_park, 1, CV_PI / 180, h_threshold); // left, right\BF\A1\BC\AD\B4\C2 min, max theta \C1\A4\C7\D8\C1\DC
 
 	if (lines_out_park.size() >= 1)
 	{
@@ -587,7 +587,7 @@ void Lane_Detector::hough_to_cluster()
 			{
 				for (int k = 0; k < different_rho.size(); k++)
 				{
-					if (abs(different_rho[k][0] - deg) <= 5 && (different_rho[k][1] - rho)<55 || (abs(different_rho[k][0] - deg)>5 && abs(different_rho[k][0] - deg) <= 10) && abs(different_rho[k][1] - rho)<50)// 두번째 조건 원래 35
+					if (abs(different_rho[k][0] - deg) <= 5 && (different_rho[k][1] - rho)<55 || (abs(different_rho[k][0] - deg)>5 && abs(different_rho[k][0] - deg) <= 10) && abs(different_rho[k][1] - rho)<50)// \B5菅\F8째 \C1\B6\B0\C7 \BF\F8\B7\A1 35
 					{
 						cluster[k].sx += x1_;
 						cluster[k].ex += x2_;
@@ -723,7 +723,7 @@ void Lane_Detector::get_crosspoint()
 
 		//if (parking_position == 1) cout << "position , x, y = " << parking_position << " " << parking_point1.x << " " << parking_point1.y << endl;
 		//else if (parking_position == 2) cout << "position , x, y = " << parking_position << " " << parking_point2.x << " " << parking_point2.y << endl;
-		//-> 임계 값 63 ~68 
+		//-> \C0緞\E8 \B0\AA 63 ~68 
 	}
 }
 

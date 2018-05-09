@@ -82,12 +82,12 @@ int main(int argc, char** argv) {
     
     ld = new Lane_Detector();
     la = new Look_Ahead();
-    lk_onoff_sub = nh.subscribe("lk_onoff_msg", 1, lk_onoffCallback);
-    cw_onoff_sub = nh.subscribe("cw_onoff_msg", 1, cw_onoffCallback);
-    do_onoff_sub = nh.subscribe("do_onoff_msg", 1, do_onoffCallback);
-    so_onoff_sub = nh.subscribe("so_onoff_msg", 1, so_onoffCallback);    
-    ut_onoff_sub = nh.subscribe("ut_onoff_msg", 1, ut_onoffCallback);
-    pk_onoff_sub = nh.subscribe("pk_onoff_msg", 1, pk_onoffCallback);
+    lk_onoff_sub = nh.subscribe("lk_onoff", 1, lk_onoffCallback);
+    cw_onoff_sub = nh.subscribe("cw_onoff", 1, cw_onoffCallback);
+    do_onoff_sub = nh.subscribe("do_onoff", 1, do_onoffCallback);
+    so_onoff_sub = nh.subscribe("so_onoff", 1, so_onoffCallback);    
+    ut_onoff_sub = nh.subscribe("ut_onoff", 1, ut_onoffCallback);
+    pk_onoff_sub = nh.subscribe("pk_onoff", 1, pk_onoffCallback);
     
     do_sub = nh.subscribe("raw_obstacles", 1, obstacleCallback);
 
@@ -99,28 +99,34 @@ int main(int argc, char** argv) {
     uturn_state = 0;
     while(ros::ok()) {
         if(lk_onoff) {
+			printf("lane_keeping_mode\n");
             ld->operate();
             la->operate(ld->originImg_left, ld->originImg_right);
             keep_lane_advanced(&control_msg);
         }
         else if(cw_onoff) {
+			printf("crosswalk_mode\n");
             // ld->operate();
             // Nayeon 
         }
         else if(do_onoff) {
+			printf("dynamic_obstacle_mode\n");
             ld->operate();
             keep_lane(&control_msg);
             do_operate();
         }
         else if(so_onoff) {
+			printf("static_obstacle_mode\n");
             ld->operate();
             keep_lane(&control_msg);
             // Hanjeong
         }
         else if(ut_onoff) {
+			printf("uturn_mode\n");
             ut_operate();
         }
         else if(pk_onoff) {
+			printf("parking_mode\n");
             pk_operate();
         }
         control_pub.publish(control_msg);
