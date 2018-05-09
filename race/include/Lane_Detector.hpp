@@ -88,6 +88,7 @@ public:
 	int parking_position = 0;
 	int parking_state = 0;
 	Point parking_point1, parking_point2,stop_parking;
+	int stop_y;
 	Mat originImg_left;
 	Mat originImg_right;
 	Lane_Detector() {}
@@ -104,6 +105,7 @@ public:
 	void parking_init();
 	void parking_release();
 	void get_crosspoint();
+	void stop_line();
 };
 
 bool Lane_Detector::is_left_error() {
@@ -742,5 +744,57 @@ void Lane_Detector::parking_release() {
 	capture_park.release();
 	parking_mode_onoff = false;
 }
+
+void Lane_Detector::stop_line()
+{
+	Mat canny_stop,range_stop,stop_img,roi_stop;
+	int threshold = 80;
+	vector<Vec2f> linesL;
+	int Lstop_x1, Lstop_x2, Lstop_y1, Lstop_y2 = 0;
+
+	stop_img = input_left;
+
+	GaussianBlur(stop_img, roi_stop, Size(5, 5), 0);
+	inRange(roi_stop, Scalar(180, 100, 100), Scalar(255, 255, 255), range_stop);
+	Canny(range_stop, canny_stop, 70, 200);
+
+	HoughLines(canny_stop, linesL, 1, CV_PI / 180, threshold, 0, 0, CV_PI / 2, CV_PI);
+
+	for (int i = 0; i < linesL.size(); i++)
+	{
+		float rho = linesL[i][0];
+		float theta = linesL[i][1];
+		double a = cos(theta), b = sin(theta);
+		double x0 = a * rho, y0 = b * rho;
+		int x1_ = int(x0 + 1000 * (-b));
+		int y1_ = int(y0 + 1000 * (a));
+		int x2_ = int(x0 - 1000 * (-b));
+		int y2_ = int(y0 - 1000 * (a));
+
+		int tx = x2_ - x1_;
+		int ty = y2_ - y1_;
+		double deg = atan2((double)ty, (double)tx) * 180 / CV_PI;
+		if (deg < 30)
+		{
+			if (Lstop_y2 < y2_)
+			{
+				Lstop_x1 = x1_;
+				Lstop_y1 = y1_;
+				Lstop_x2 = x2_;
+				Lstop_y2 = y2_;
+
+			}
+		}
+	}
+
+	//if (Lstop_y2 != 0)line(stop_img, Point(Lstop_x1, Lstop_y1), Point(Lstop_x2, Lstop_y2), Scalar(0, 0, 255), 3, LINE_AA);
+
+	stop_y = Lstop_y2;
+
+
+}
+
+
+
 
 #endif
