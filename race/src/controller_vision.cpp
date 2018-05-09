@@ -7,10 +7,18 @@
 #include <race/drive_values.h>
 #include <std_msgs/Bool.h>
 #include <signal.h>
+#include <time.h>
 
 #define CENTER_POINT 690
 #define CENTER_POINT_LA 750
 #define MAX_SPEED 12
+#define PARKING_STATE_1_THRESHOLD 100
+#define PARKING_STATE_2_THRESHOLD 100
+#define PARKING_STATE_3_THRESHOLD 100
+#define PARKING_STATE_4_THRESHOLD 100
+#define PARKING_STATE_5_THRESHOLD 100
+#define UTURN_THRESHOLD 1.5
+using namespace std;
 
 Lane_Detector* ld;
 Look_Ahead* la;
@@ -24,7 +32,7 @@ ros::Publisher return_sig_pub;
 // variables for dynamic obstacle 
 int do_cnt = 0;
 int obstacle_size;
-
+obstacle_detector::Obstacles obstacles_data;
 // variables for lane keeper
 float p_steering = -0.3f;
 float p_steering_curve = 20.f;
@@ -41,7 +49,7 @@ bool so_onoff = false;
 bool ut_onoff = false;
 bool pk_onoff = false;
 int parking_state = 0;
-
+int uturn_state = 0;
 void lk_onoffCallback(const std_msgs::Bool &msg);
 void cw_onoffCallback(const std_msgs::Bool &msg);
 void do_onoffCallback(const std_msgs::Bool &msg);
@@ -49,11 +57,12 @@ void so_onoffCallback(const std_msgs::Bool &msg);
 void ut_onoffCallback(const std_msgs::Bool &msg);
 void pk_onoffCallback(const std_msgs::Bool &msg);
 void obstacleCallback(const obstacle_detector::Obstacles data); // dynamic obstacle callback
+double obstacleDistance(geometry_msgs::Point &p1, geometry_msgs::Point &p2);
 void keep_lane_advanced(race::drive_values* control_msg); // base mode
 void keep_lane(race::drive_values* control_msg); // parking, Dynamic obstacle, static obstacle, Uturn, Crosswalk  
 void do_operate();
 void pk_operate();
-
+void ut_operate();
 float cal_lookahead_op_error();
 
 int main(int argc, char** argv) {
@@ -96,9 +105,7 @@ int main(int argc, char** argv) {
             // Hanjeong
         }
         else if(ut_onoff) {
-            ld->operate();
-            keep_lane();
-            // Seungyun
+            ut_operate();
         }
         else if(pk_onoff) {
             pk_operate();
@@ -136,9 +143,48 @@ bool isExist(int do_cnt) {
   return true;
 }
 void obstacleCallback(const obstacle_detector::Obstacles data) {
-    if(!do_onoff) 
-        return;
     obstacle_size = data.circles.size();
+    obstacles_data = data;
+}
+void ut_operate() {
+    switch (uturn_state) {
+    case 0 :
+    ld->operate();
+    lane_keep();
+    bool flag = false;
+    geometry_msgs::Point s;
+    for(int i = 0; i < obstacle_size; i++) {
+        if(obstacles_data.circles[i].center.y > -0.55 && obstacles_data.circles[i].center.y < 0.55 && obstacles_data.circles[i].center.x > 0.015 && obstacles_data.circles[i].center.x < 5) {
+            if(!flag || s.x > obstacles_data.circles[i].center.x){
+                flag = true;
+                s = data.circles[i].center;
+            }
+        }
+    }
+    
+    if(s.x <= UTURN_THRESHOLD) {
+        uturn_state = 1;
+    }
+    break;
+
+    case 1 :
+    control_msg.steering = 0;
+    control_msg.throttle = 5;
+    if(obstacle_size == 0) {
+        uturn_state = 2;
+    }
+    break;
+
+    case 2 :
+    control_msg.steering = 200;
+    control_msg.throttle = 5;
+    ld->operate();
+    if(!ld->is_left_error && !ld->is_right_error) {
+        return_msg.data = MODE_UTURN;
+        return_sig_pub.publish(return_msg);
+    }
+    break;
+    }
 }
 void do_operate() {
   bool exist_obstacle;
@@ -271,34 +317,35 @@ void keep_lane(race::drive_values* control_msg) {
     control_msg->steering = steering;
     control_msg->throttle = speed;
 }
-#define PARKING_STATE_1_THRESHHOLD 100
-#define PARKING_STATE_2_THRESHHOLD 100
-#define PARKING_STATE_3_THRESHHOLD 100
-#define PARKING_STATE_4_THRESHHOLD 100
-#define PARKING_STATE_5_THRESHHOLD 100
 
 
+clock_t begin, end;
 void pk_operate() {
     switch (parking_state) {
     case -1:
-    ros::Duration(2.5).sleep();
-    if(is_parked){
-        parking_state = 5;
+    end = clock();
+    if((end - begin)/CLOCKS_PER_SEC >= 2.5f) {
+        if(is_parked){
+            parking_state = 5;
+        }
+        parking_state = 1;
     }
-    parking_state = 1;
     break;
 
     case 0 : 
+    ld->parking_init();
     ld->operate();
     keep_lane();
-    if(ld->parking_point2.y < PARKING_STATE_1_THRESHHOLD) {
+    if(ld->parking_point2.y < PARKING_STATE_1_THRESHOLD) {
         parking_state = -1;
+        begin = clock();
         control_msg.steering = 200; // right max steer
         control_msg.throttle = 5;
     }
     break;
 
     case 1 :
+    ld->operate();
     if(!ld->is_left_error && !ld->is_right_error){
         parking_state = 2;
     }
@@ -307,7 +354,7 @@ void pk_operate() {
     case 2 :
     ld->operate();
     keep_lane();
-    if(ld->stop_parking.y > PARKING_STATE_2_THRESHHOLD) {
+    if(ld->stop_parking.y > PARKING_STATE_2_THRESHOLD) {
         control_msg.throttle = 0;
         is_parked = true;
         parking_state = 3;
@@ -324,17 +371,20 @@ void pk_operate() {
     ld->operate();
     keep_lane();
     control_msg.throttle = -5;
-    if(ld->stop_parking.y < PARKING_STATE_4_THRESHHOLD) {
+    if(ld->stop_parking.y < PARKING_STATE_4_THRESHOLD) {
         parking_state = -1;
+        begin = clock();
         control_msg.steering = 200; // right max steer
         control_msg.throttle = -5;
     }
     break;
 
     case 5 :
+    ld->operate();
     if(!ld->is_left_error && !ld->is_right_error){
         return_msg.data = MODE_PARKING;
         return_sig_pub.publish(return_msg);
+        ld->parking_release();
     }
     break;
 }
