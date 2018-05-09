@@ -8,13 +8,13 @@
     ros::Subscriber sub, sub2;
 
     std_msgs::Bool lk_onoff_msg = std_msgs::Bool(); // Lane Keeper
-    std:msgs::Bool sc_onoff_msg = std_msgs::Bool(); // Sign Classifier
-    std:msgs::Bool oa_onoff_msg = std_msgs::Bool(); // Obstacle Avoider
-    std:msgs::Bool cw_onoff_msg = std_msgs::Bool(); // Crosswalk
-    std:msgs::Bool pk_onoff_msg = std_msgs::Bool(); // Parking
-    std:msgs::Bool ut_onoff_msg = std_msgs::Bool(); // U-Turn
-    std:msgs::Bool so_onoff_msg = std_msgs::Bool(); // Static Obstacle
-    std:msgs::Bool do_onoff_msg = std_msgs::Bool(); // Dynamic Obstacle
+    std_msgs::Bool sc_onoff_msg = std_msgs::Bool(); // Sign Classifier
+    std_msgs::Bool oa_onoff_msg = std_msgs::Bool(); // Obstacle Avoider
+    std_msgs::Bool cw_onoff_msg = std_msgs::Bool(); // Crosswalk
+    std_msgs::Bool pk_onoff_msg = std_msgs::Bool(); // Parking
+    std_msgs::Bool ut_onoff_msg = std_msgs::Bool(); // U-Turn
+    std_msgs::Bool so_onoff_msg = std_msgs::Bool(); // Static Obstacle
+    std_msgs::Bool do_onoff_msg = std_msgs::Bool(); // Dynamic Obstacle
     
     int return_sig;
     //

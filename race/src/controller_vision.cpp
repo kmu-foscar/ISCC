@@ -6,6 +6,7 @@
 #include <obstacle_detector/Obstacles.h>
 #include <race/drive_values.h>
 #include <std_msgs/Bool.h>
+#include <std_msgs/Int16.h>
 #include <signal.h>
 #include <time.h>
 
@@ -26,6 +27,13 @@ race::drive_values control_msg;
 std_msgs::Int16 return_msg;
 ros::Subscriber sub; 
 ros::Subscriber do_sub;
+ros::Subscriber lk_onoff_sub;
+ros::Subscriber cw_onoff_sub;
+ros::Subscriber do_onoff_sub;
+ros::Subscriber so_onoff_sub;
+ros::Subscriber ut_onoff_sub;
+ros::Subscriber pk_onoff_sub;
+
 ros::Publisher control_pub;
 ros::Publisher return_sig_pub;
 
@@ -33,6 +41,8 @@ ros::Publisher return_sig_pub;
 int do_cnt = 0;
 int obstacle_size;
 obstacle_detector::Obstacles obstacles_data;
+clock_t begin, end;
+
 // variables for lane keeper
 float p_steering = -0.3f;
 float p_steering_curve = 20.f;
@@ -48,8 +58,9 @@ bool do_onoff = false;
 bool so_onoff = false;
 bool ut_onoff = false;
 bool pk_onoff = false;
-int parking_state = 0;
-int uturn_state = 0;
+int parking_state;
+int uturn_state;
+bool is_parked;
 void lk_onoffCallback(const std_msgs::Bool &msg);
 void cw_onoffCallback(const std_msgs::Bool &msg);
 void do_onoffCallback(const std_msgs::Bool &msg);
@@ -71,12 +82,12 @@ int main(int argc, char** argv) {
     
     ld = new Lane_Detector();
     la = new Look_Ahead();
-    lk_onoff_sub = nh.subscirber("lk_onoff_msg", lk_onoffCallback);
-    cw_onoff_sub = nh.subscirber("cw_onoff_msg", cw_onoffCallback);
-    do_onoff_sub = nh.subscirber("do_onoff_msg", do_onoffCallback);
-    so_onoff_sub = nh.subscirber("so_onoff_msg", so_onoffCallback);    
-    ut_onoff_sub = nh.subscirber("ut_onoff_msg", ut_onoffCallback);
-    pk_onoff_sub = nh.subscirber("pk_onoff_msg", pk_onoffCallback);
+    lk_onoff_sub = nh.subscribe("lk_onoff_msg", lk_onoffCallback);
+    cw_onoff_sub = nh.subscribe("cw_onoff_msg", cw_onoffCallback);
+    do_onoff_sub = nh.subscribe("do_onoff_msg", do_onoffCallback);
+    so_onoff_sub = nh.subscribe("so_onoff_msg", so_onoffCallback);    
+    ut_onoff_sub = nh.subscribe("ut_onoff_msg", ut_onoffCallback);
+    pk_onoff_sub = nh.subscribe("pk_onoff_msg", pk_onoffCallback);
     
     do_sub = nh.subscribe("raw_obstacles", 1, obstacleCallback);
 
@@ -84,6 +95,8 @@ int main(int argc, char** argv) {
     return_sig_pub = nh.advertise<std_msgs::Int16>("return_signal", 1);
     ld->init();
     la->init();
+    parking_state = 0;
+    uturn_state = 0;
     while(ros::ok()) {
         if(lk_onoff) {
             ld->operate();
@@ -91,17 +104,17 @@ int main(int argc, char** argv) {
             keep_lane_advanced(&control_msg);
         }
         else if(cw_onoff) {
-            ld->operate();
+            // ld->operate();
             // Nayeon 
         }
         else if(do_onoff) {
             ld->operate();
-            keep_lane();
+            keep_lane(&control_msg);
             do_operate();
         }
         else if(so_onoff) {
             ld->operate();
-            keep_lane();
+            keep_lane(&control_msg);
             // Hanjeong
         }
         else if(ut_onoff) {
@@ -150,14 +163,14 @@ void ut_operate() {
     switch (uturn_state) {
     case 0 :
     ld->operate();
-    lane_keep();
+    keep_lane();
     bool flag = false;
     geometry_msgs::Point s;
     for(int i = 0; i < obstacle_size; i++) {
         if(obstacles_data.circles[i].center.y > -0.55 && obstacles_data.circles[i].center.y < 0.55 && obstacles_data.circles[i].center.x > 0.015 && obstacles_data.circles[i].center.x < 5) {
             if(!flag || s.x > obstacles_data.circles[i].center.x){
                 flag = true;
-                s = data.circles[i].center;
+                s = obstacles_data.circles[i].center;
             }
         }
     }
@@ -179,7 +192,7 @@ void ut_operate() {
     control_msg.steering = 200;
     control_msg.throttle = 5;
     ld->operate();
-    if(!ld->is_left_error && !ld->is_right_error) {
+    if(!ld->is_left_error() && !ld->is_right_error()) {
         return_msg.data = MODE_UTURN;
         return_sig_pub.publish(return_msg);
     }
@@ -319,7 +332,6 @@ void keep_lane(race::drive_values* control_msg) {
 }
 
 
-clock_t begin, end;
 void pk_operate() {
     switch (parking_state) {
     case -1:
@@ -335,7 +347,7 @@ void pk_operate() {
     case 0 : 
     ld->parking_init();
     ld->operate();
-    keep_lane();
+    keep_lane(&control_msg);
     if(ld->parking_point2.y < PARKING_STATE_1_THRESHOLD) {
         parking_state = -1;
         begin = clock();
@@ -346,14 +358,14 @@ void pk_operate() {
 
     case 1 :
     ld->operate();
-    if(!ld->is_left_error && !ld->is_right_error){
+    if(!ld->is_left_error() && !ld->is_right_error()){
         parking_state = 2;
     }
     break;
 
     case 2 :
     ld->operate();
-    keep_lane();
+    keep_lane(&control_msg);
     if(ld->stop_parking.y > PARKING_STATE_2_THRESHOLD) {
         control_msg.throttle = 0;
         is_parked = true;
@@ -361,7 +373,6 @@ void pk_operate() {
     }
     break;
 
-    }
     case 3 :
     ros::Duration(10).sleep(); 
     parking_state = 4;
@@ -369,7 +380,7 @@ void pk_operate() {
 
     case 4 :
     ld->operate();
-    keep_lane();
+    keep_lane(&control_msg);
     control_msg.throttle = -5;
     if(ld->stop_parking.y < PARKING_STATE_4_THRESHOLD) {
         parking_state = -1;
@@ -381,11 +392,12 @@ void pk_operate() {
 
     case 5 :
     ld->operate();
-    if(!ld->is_left_error && !ld->is_right_error){
+    if(!ld->is_left_error() && !ld->is_right_error()){
         return_msg.data = MODE_PARKING;
         return_sig_pub.publish(return_msg);
         ld->parking_release();
     }
-    break;
+    break;    
+    }
 }
 
