@@ -103,7 +103,6 @@ int main(int argc, char** argv) {
         else if(pk_onoff) {
             pk_operate();
         }
-
         control_pub.publish(control_msg);
         ros::spinOnce();
     }
@@ -281,47 +280,62 @@ void keep_lane(race::drive_values* control_msg) {
 
 void pk_operate() {
     switch (parking_state) {
-    case 0 : 
-    if(ld->parking_point2.y < PARKING_STATE_1_THRESHHOLD) {
-        parking_state = 1;
+    case -1:
+    ros::Duration(2.5).sleep();
+    if(is_parked){
+        parking_state = 5;
     }
+    parking_state = 1;
+    break;
+
+    case 0 : 
     ld->operate();
     keep_lane();
+    if(ld->parking_point2.y < PARKING_STATE_1_THRESHHOLD) {
+        parking_state = -1;
+        control_msg.steering = 200; // right max steer
+        control_msg.throttle = 5;
+    }
     break;
+
     case 1 :
-    // TODO : condition reconsideration
     if(!ld->is_left_error && !ld->is_right_error){
         parking_state = 2;
     }
-    control_msg.steering = 200; // right max steer
     break;
+
     case 2 :
-    if(ld->stop_parking.y > PARKING_STATE_2_THRESHHOLD) {
-        parking_state = 3;
-    }
     ld->operate();
     keep_lane();
+    if(ld->stop_parking.y > PARKING_STATE_2_THRESHHOLD) {
+        control_msg.throttle = 0;
+        is_parked = true;
+        parking_state = 3;
+    }
     break;
+
     }
     case 3 :
     ros::Duration(10).sleep(); 
     parking_state = 4;
     break;
+
     case 4 :
-    if(ld->stop_parking.y < PARKING_STATE_4_THRESHHOLD) {
-        parking_state = 5;
-    }
     ld->operate();
     keep_lane();
     control_msg.throttle = -5;
+    if(ld->stop_parking.y < PARKING_STATE_4_THRESHHOLD) {
+        parking_state = -1;
+        control_msg.steering = 200; // right max steer
+        control_msg.throttle = -5;
+    }
+    break;
+
     case 5 :
-    // TODO : condition reconsideration
     if(!ld->is_left_error && !ld->is_right_error){
         return_msg.data = MODE_PARKING;
         return_sig_pub.publish(return_msg);
     }
-    control_msg.steering = 200; // right max steer 
-    control_msg.throttle = -5;
     break;
 }
 
