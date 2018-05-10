@@ -18,7 +18,7 @@
 Lane_Detector* ld;
 Look_Ahead* la;
 race::drive_values control_msg;
-ros::Subscriber sub, sub2; 
+ros::Subscriber sub, sub2;
 ros::Publisher control_pub;
 
 float p_steering = -0.3f;
@@ -40,7 +40,7 @@ int isLeftObstacle, isRightObstacle;
 int main(int argc, char** argv) {
     ros::init(argc, argv, "Lane_Keeper");
     ros::NodeHandle nh;
-    
+
     ld = new Lane_Detector();
     la = new Look_Ahead();
     sub = nh.subscribe("control_variables", 1000, testerCallback);
@@ -53,10 +53,10 @@ int main(int argc, char** argv) {
     while(ros::ok()) {
         ld->operate();
         la->operate(ld->originImg_left, ld->originImg_right);
-        
-        sub2 = nh.subscribe("raw_obstacles", 1, calculator);    
+
+        sub2 = nh.subscribe("raw_obstacles", 1, calculator);
         generate_control_msg(&control_msg);
-        
+
         control_pub.publish(control_msg);
         ros::spinOnce();
     }
@@ -83,29 +83,29 @@ void calculator(obstacle_detector::Obstacles data)
     double minimumL = MAX, minimumR = MAX;
     const double rightTheta = 0.52; // 30도
     double leftTheta = PI - rightTheta;
-    
+
     //앞까지의 거리
     for(int i = 0; i < data.circles.size(); i++)
     {
         geometry_msgs::Point curPoint = data.circles[i].center;
         geometry_msgs::Point temp;
-        
+
         //x축 대칭
         curPoint.y = -curPoint.y;
-        
+
         //y = x 대칭
         swap(curPoint.x, curPoint.y);
 
         if(curPoint.y == 0.0 || curPoint.x == 0.0)
             continue;
-        
+
         double angle = atan2(curPoint.y, curPoint.x);
-        double dist = (curPoint.y) * (curPoint.y) - (curPoint.x) * (curPoint.x);
-        
+        double dist = (curPoint.y) * (curPoint.y) + (curPoint.x) * (curPoint.x);
+
         //1,2사분면이 아니면
         if(angle < 0.0)
             continue;
-        
+
         //30도이상 오른쪽
         else if(PI / 2 > angle && angle > rightTheta)
         {
@@ -115,17 +115,17 @@ void calculator(obstacle_detector::Obstacles data)
                 closestRightPoint = curPoint;
             }
         }
-        //120도이하 왼쪽 
+        //120도이하 왼쪽
         else if(PI / 2 < angle && angle < leftTheta)
         {
-            //왼쪽 
+            //왼쪽
             if(minimumL > dist){
                 minimumL = dist;
                 closestLeftPoint = curPoint;
             }
         }
     }
-    
+
     //둘다 잡지 못했거나, 하나가 깜빡이면
     if(minimumL == minimumR)
     {
@@ -140,20 +140,20 @@ void calculator(obstacle_detector::Obstacles data)
     }
     if(minimumL < minimumR) //왼쪽 장애물이 오른쪽 장애물보다 가까운데
     {
-        if(isRightObstacle && cnt < 10) // 오른쪽 장애물이 깜박거려서 못본거였으면 
+        if(isRightObstacle && cnt < 10) // 오른쪽 장애물이 깜박거려서 못본거였으면
         {
-            cnt++; 
+            cnt++;
             return; //그대로
         }
         if(isRightObstacle) //실제로 안보이게 된거라면
             isRightObstacle = 0;
-            
+
         cnt = 0;
         isLeftObstacle = 1;
     }
     if(minimumR < minimumL) //오른쪽 장애물이 왼쪽 장애물보다 가까운데
     {
-        if(isLeftObstacle && cnt < 10) // 왼쪽 장애물이 깜박였던거라면 
+        if(isLeftObstacle && cnt < 10) // 왼쪽 장애물이 깜박였던거라면
         {
             cnt++;
             return; //지금 boolean 그대로
@@ -167,7 +167,7 @@ void calculator(obstacle_detector::Obstacles data)
     if(isLeftObstacle)
         printf("Find LeftObstacle! distance Obstacle : %d \n", closestLeftPoint.x);
     if(isRightObstacle)
-        printf("Find RightObstacle! distance Obstacle : %d \n", closesRightPoint.x);    
+        printf("Find RightObstacle! distance Obstacle : %d \n", closesRightPoint.x);
 }
 void generate_control_msg(race::drive_values* control_msg) {
     int speed = MAX_SPEED;
@@ -179,7 +179,7 @@ void generate_control_msg(race::drive_values* control_msg) {
     Point pa_2 = ld->p2;
     Point pb_1 = ld->p3;
     Point pb_2 = ld->p4;
-    
+
     pb_1.x += 640;
     pb_2.x += 640;
 
@@ -200,15 +200,15 @@ void generate_control_msg(race::drive_values* control_msg) {
 
     if(ld->get_intersectpoint(pa_1, pa_2, pb_1, pb_2, &op)) {
         float error_steering = CENTER_POINT - op.x;
-        steering = p_steering * error_steering * (float)(1/(float)speed) * 5; 
-    } 
+        steering = p_steering * error_steering * (float)(1/(float)speed) * 5;
+    }
     else if(ld->is_left_error()) {
         steering = -p_steering_curve / ld->get_right_slope() * (float)(1/(float)speed) * 5;
     }
     else if(ld->is_right_error()) {
         steering = p_steering_curve / ld->get_left_slope() * (float)(1/(float)speed) * 5;
     }
-    
+
     steering = min(max(steering, -100), 100);
     //printf("steering : %d\n", steering);
     steering += 100;
@@ -243,5 +243,5 @@ float cal_lookahead_op_error() {
     else {
         error_op = 0;
     }
-    return error_op; 
+    return error_op;
 }
