@@ -21,6 +21,8 @@
 #define UTURN_THRESHOLD 1.5
 #define CROSSWALK_THRESHOLD 50
 #define STATIC_OBSTACLE_THRESHOLD 10
+#define MAX 12345
+#define PI 3.1415
 using namespace std;
 
 Lane_Detector* ld;
@@ -56,6 +58,7 @@ int so_cnt = 0;
 int isLeftObstacle, isRightObstacle;
 bool isLeftStaticPass = false;
 bool isRightStaticPass = false;
+int cnt = 0;
 
 int steering;
 int throttle;
@@ -544,7 +547,7 @@ void so_operate(){
   if(isLeftObstacle)
       printf("Find LeftObstacle! distance Obstacle : %d \n", closestLeftPoint.x);
   if(isRightObstacle)
-      printf("Find RightObstacle! distance Obstacle : %d \n", closesRightPoint.x);
+      printf("Find RightObstacle! distance Obstacle : %d \n", closestRightPoint.x);
 
   switch(static_obstacle_state){
     case 0:
