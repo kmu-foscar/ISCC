@@ -60,6 +60,11 @@ private:
   bool updateParams(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
   void scanCallback(const sensor_msgs::LaserScan::ConstPtr scan_msg);
   void pclCallback(const sensor_msgs::PointCloud::ConstPtr pcl_msg);
+  void oa_onoffCallback(const std_msgs::Bool &msg);
+  void ut_onoffCallback(const std_msgs::Bool &msg);
+  void pk_onoffCallback(const std_msgs::Bool &msg);
+  void do_onoffCallback(const std_msgs::Bool &msg);
+  void so_onoffCallback(const std_msgs::Bool &msg);
 
   void initialize() { std_srvs::Empty empt; updateParams(empt.request, empt.response); }
 
@@ -82,6 +87,14 @@ private:
 
   ros::Subscriber scan_sub_;
   ros::Subscriber pcl_sub_;
+  // Hwancheol 
+  ros::Subscriber oa_onoff_sub_;
+  ros::Subscriber ut_onoff_sub_;
+  ros::Subscriber pk_onoff_sub_;
+  ros::Subscriber do_onoff_sub_;
+  ros::Subscriber so_onoff_sub_;
+
+  // HWancheol End
   ros::Publisher obstacles_pub_;
   ros::ServiceServer params_srv_;
 
