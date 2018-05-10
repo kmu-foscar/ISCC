@@ -147,6 +147,16 @@ void cw_onoffCallback(const std_msgs::Bool &msg) {
     cw_onoff = msg.data;
 }
 void do_onoffCallback(const std_msgs::Bool &msg) {
+    if(do_onoff != msg.data) {
+	if(do_onoff) {
+	    system("rosnode kill urg_node");
+	    system("rosrun urg_node urg_node _ip_address:=192.168.2.11 _angle_min:=-1.57 _angle_max:=1.57");
+	}
+	else {
+	    system("rosnode kill urg_node");
+	    system("rosrun urg_node urg_node _ip_address:=192.168.2.11 _angle_min:=-0.29 _angle_max:=0.29");
+	}
+    }
     do_onoff = msg.data;
 }
 void so_onoffCallback(const std_msgs::Bool &msg) {
