@@ -10,9 +10,11 @@
 #define CENTER_POINT 690
 #define CENTER_POINT_LA 750
 #define MAX_SPEED 12
-#define PI 3.14
+
+#define PI 3.1415
 #define O_DIST 4
 #define O_DIST_POW O_DIST * O_DIST
+
 Lane_Detector* ld;
 Look_Ahead* la;
 race::drive_values control_msg;
@@ -26,14 +28,14 @@ float p_lookahead = 0.05f;
 int steering;
 int throttle;
 int test_speed = 5;
+int cnt;
 
 bool onoff = true;
 void testerCallback(const race::control_variables &msg);
 void generate_control_msg(race::drive_values* control_msg);
 float cal_lookahead_op_error();
 
-int isLeftObstacle;
-int isRightObstacle;
+int isLeftObstacle, isRightObstacle;
 
 int main(int argc, char** argv) {
     ros::init(argc, argv, "Lane_Keeper");
@@ -47,7 +49,7 @@ int main(int argc, char** argv) {
 
     isLeftObstacle = 0;
     isRightObstacle = 0;
-
+    cnt = 0;
     while(ros::ok()) {
         ld->operate();
         la->operate(ld->originImg_left, ld->originImg_right);
@@ -79,7 +81,7 @@ void calculator(obstacle_detector::Obstacles data)
     closestLeftPoint.y = MAX, closestRightPoint.x = MAX;
 
     double minimumL = MAX, minimumR = MAX;
-    double rightTheta = 0.52; // 30도
+    const double rightTheta = 0.52; // 30도
     double leftTheta = PI - rightTheta;
     
     //앞까지의 거리
@@ -92,10 +94,7 @@ void calculator(obstacle_detector::Obstacles data)
         curPoint.y = -curPoint.y;
         
         //y = x 대칭
-        temp.x = curPoint.x;
-        temp.y = curPoint.y:
-        curPoint.x = temp.y:
-        curPoint.y = temp.x;
+        swap(curPoint.x, curPoint.y);
 
         if(curPoint.y == 0.0 || curPoint.x == 0.0)
             continue;
@@ -108,7 +107,7 @@ void calculator(obstacle_detector::Obstacles data)
             continue;
         
         //30도이상 오른쪽
-        else if(PI / 2 < angle && angle > rightTheta)
+        else if(PI / 2 > angle && angle > rightTheta)
         {
             //오른쪽
             if(minimumR > dist) {
@@ -117,7 +116,7 @@ void calculator(obstacle_detector::Obstacles data)
             }
         }
         //120도이하 왼쪽 
-        else if(PI / 2 > angle && angle < leftTheta)
+        else if(PI / 2 < angle && angle < leftTheta)
         {
             //왼쪽 
             if(minimumL > dist){
@@ -127,22 +126,53 @@ void calculator(obstacle_detector::Obstacles data)
         }
     }
     
-    //왼쪽 못잡고, 켜져잇으면
-    if(minimumL == MAX && isLeftObstacle == 1)
-        isLeftObstacle = -1;
-    //오른쪽 못잡고, 켜져있으면
-    if(minimumR == MAX && isRightObstacle == 1)
-        isRightObstacle = -1;
-
-    //일정범위 내에 있으면 
-    if(minimumL < O_DIST_POW && isLeftObstacle != -1)
+    //둘다 잡지 못했거나, 하나가 깜빡이면
+    if(minimumL == minimumR)
+    {
+        if((isLeftObstacle || isRightObstacle) && cnt < 10)
+        {
+            cnt++;
+            return;
+        }
+        isLeftObstacle = 0;
+        isRightObstacle = 0;
+        cnt = 0;
+    }
+    if(minimumL < minimumR) //왼쪽 장애물이 오른쪽 장애물보다 가까운데
+    {
+        if(isRightObstacle && cnt < 10) // 오른쪽 장애물이 깜박거려서 못본거였으면 
+        {
+            cnt++; 
+            return; //그대로
+        }
+        if(isRightObstacle) //실제로 안보이게 된거라면
+            isRightObstacle = 0;
+            
+        cnt = 0;
         isLeftObstacle = 1;
-    
-    if(minimumR < O_DIST_POW && isRightObstacle != -1)
+    }
+    if(minimumR < minimumL) //오른쪽 장애물이 왼쪽 장애물보다 가까운데
+    {
+        if(isLeftObstacle && cnt < 10) // 왼쪽 장애물이 깜박였던거라면 
+        {
+            cnt++;
+            return; //지금 boolean 그대로
+        }
+        if(isLeftObstacle)
+            isLeftObstacle = 0;
+        cnt = 0;
         isRightObstacle = 1;
+    }
+
+    if(isLeftObstacle)
+        printf("Find LeftObstacle! distance Obstacle : %d \n", closestLeftPoint.x);
+    if(isRightObstacle)
+        printf("Find RightObstacle! distance Obstacle : %d \n", closesRightPoint.x);    
 }
 void generate_control_msg(race::drive_values* control_msg) {
     int speed = MAX_SPEED;
+    const int Xshift = 320;
+    const int Xspeed = 5;
     float op_error;
     Point op;
     Point pa_1 = ld->p1;
@@ -153,15 +183,19 @@ void generate_control_msg(race::drive_values* control_msg) {
     pb_1.x += 640;
     pb_2.x += 640;
 
+    //오른쪽 장애물 발견 시 오른쪽 카메라 차선을 Xshift 만큼 왼쪽으로 이동
     if(isRightObstacle == 1)
     {
-        pb_1.x -= 320;
-        pb_2.x -= 320;
+        speed = Xspeed;
+        pb_1.x -= Xshift;
+        pb_2.x -= Xshift;
     }
+    //왼쪽 장애물 발견 시 왼쪽 카메라 차선을 Xshift 만큼 오른쪽으로 이동
     if(isLeftObstacle == 1)
     {
-        pa_1.x += 320;
-        pa_2.x += 320;
+        speed = Xspeed;
+        pa_1.x += Xshift;
+        pa_2.x += Xshift;
     }
 
     if(ld->get_intersectpoint(pa_1, pa_2, pb_1, pb_2, &op)) {
