@@ -10,8 +10,8 @@
 #include <signal.h>
 #include <time.h>
 
-#define CENTER_POINT 690
-#define CENTER_POINT_LA 750
+#define CENTER_POINT 640
+#define CENTER_POINT_LA 640
 #define MAX_SPEED 12
 #define PARKING_STATE_1_THRESHOLD 100
 #define PARKING_STATE_2_THRESHOLD 100
