@@ -40,6 +40,7 @@
 #include <std_srvs/Empty.h>
 #include <sensor_msgs/LaserScan.h>
 #include <sensor_msgs/PointCloud.h>
+#include <std_msgs/Bool.h>
 #include <obstacle_detector/Obstacles.h>
 
 #include "obstacle_detector/utilities/point.h"

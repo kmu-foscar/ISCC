@@ -109,11 +109,11 @@ bool ObstacleExtractor::updateParams(std_srvs::Empty::Request &req, std_srvs::Em
       if (p_use_scan_){
         scan_sub_ = nh_.subscribe("scan", 10, &ObstacleExtractor::scanCallback, this);
 
-	oa_onoff_sub_ = nh_.subscribe("oa_onoff", 1, oa_onoffCallback); 
-	ut_onoff_sub_ = nh_.subscribe("ut_onoff", 1, ut_onoffCallback);
-	pk_onoff_sub_ = nh_.subscribe("pk_onoff", 1, pk_onoffCallback);
-	do_onoff_sub_ = nh_.subscribe("do_onoff", 1, do_onoffCallback);
-	so_onoff_sub_ = nh_.subscribe("so_onoff", 1, so_onoffCallback);
+	oa_onoff_sub_ = nh_.subscribe("oa_onoff", 1, &ObstacleExtractor::oa_onoffCallback, this); 
+	ut_onoff_sub_ = nh_.subscribe("ut_onoff", 1, &ObstacleExtractor::ut_onoffCallback, this);
+	pk_onoff_sub_ = nh_.subscribe("pk_onoff", 1, &ObstacleExtractor::pk_onoffCallback, this);
+	do_onoff_sub_ = nh_.subscribe("do_onoff", 1, &ObstacleExtractor::do_onoffCallback, this);
+	so_onoff_sub_ = nh_.subscribe("so_onoff", 1, &ObstacleExtractor::so_onoffCallback, this);
 	  }
       else if (p_use_pcl_)
         pcl_sub_ = nh_.subscribe("pcl", 10, &ObstacleExtractor::pclCallback, this);
@@ -161,7 +161,7 @@ void ObstacleExtractor::pclCallback(const sensor_msgs::PointCloud::ConstPtr pcl_
   processPoints();
 }
 // Hwancheol Callback implement 
-void oa_onoffCallback(const std_msgs::Bool &msg) {
+void ObstacleExtractor::oa_onoffCallback(const std_msgs::Bool &msg) {
   if(msg.data) {
     p_max_circle_radius_ = 0.15;
     p_radius_enlargement_ = 0.01;
@@ -171,7 +171,7 @@ void oa_onoffCallback(const std_msgs::Bool &msg) {
     p_max_y_limit_ =  2.0;
   }
 }
-void ut_onoffCallback(const std_msgs::Bool &msg) {
+void ObstacleExtractor::ut_onoffCallback(const std_msgs::Bool &msg) {
   if(msg.data) {
     p_max_circle_radius_ = 0.15;
     p_radius_enlargement_ = 0.01;
@@ -181,7 +181,7 @@ void ut_onoffCallback(const std_msgs::Bool &msg) {
     p_max_y_limit_ =  3.0;
   }
 }
-void pk_onoffCallback(const std_msgs::Bool &msg) {\
+void ObstacleExtractor::pk_onoffCallback(const std_msgs::Bool &msg) {\
   if(msg.data) {
     p_max_circle_radius_ = 2.5;
     p_radius_enlargement_ = 0.5;
@@ -191,7 +191,7 @@ void pk_onoffCallback(const std_msgs::Bool &msg) {\
     p_max_y_limit_ =  3.0;
   }
 }
-void do_onoffCallback(const std_msgs::Bool &msg) {
+void ObstacleExtractor::do_onoffCallback(const std_msgs::Bool &msg) {
   if(msg.data) {
     p_max_circle_radius_ = 2;
     p_radius_enlargement_ = 0.5;
@@ -201,7 +201,7 @@ void do_onoffCallback(const std_msgs::Bool &msg) {
     p_max_y_limit_ =  1.0;
   }
 }
-void so_onoffCallback(const std_msgs::Bool &msg) {
+void ObstacleExtractor::so_onoffCallback(const std_msgs::Bool &msg) {
   if(msg.data) {
     p_max_circle_radius_ = 0.5;
     p_radius_enlargement_ = 0.1;
