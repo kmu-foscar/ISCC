@@ -19,6 +19,7 @@ using namespace std;
 
 const CvScalar COLOR_BLUE = CvScalar(255, 0, 0);
 const CvScalar COLOR_RED = CvScalar(0, 0, 255);
+const CvScalar COLOR_GREEN = CvScalar(0, 255, 0);
 
 const Vec3b RGB_WHITE_LOWER = Vec3b(100, 100, 190);
 const Vec3b RGB_WHITE_UPPER = Vec3b(255, 255, 255);
