@@ -65,7 +65,10 @@ if __name__ == '__main__' :
 				if(not sc_onoff or not cam.isOpened()) :
 					continue
                 		ret_val, img = cam.read()
+				img_crop = img[0:320, 384:640]
                 		cv2.imshow('img', img)
+				cv2.imshow('img_crop', img_crop)
+			
 
 		                if ret_val:
                 		        start_time = time.time()
