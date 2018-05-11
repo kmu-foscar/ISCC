@@ -165,7 +165,7 @@ void ObstacleExtractor::oa_onoffCallback(const std_msgs::Bool &msg) {
   if(msg.data) {
     p_max_circle_radius_ = 0.15;
     p_radius_enlargement_ = 0.01;
-    p_min_x_limit_ = -10.0;
+    p_min_x_limit_ =  0.2;
     p_max_x_limit_ =  10.0;
     p_min_y_limit_ = -2.0;
     p_max_y_limit_ =  2.0;
@@ -175,7 +175,7 @@ void ObstacleExtractor::ut_onoffCallback(const std_msgs::Bool &msg) {
   if(msg.data) {
     p_max_circle_radius_ = 0.15;
     p_radius_enlargement_ = 0.01;
-    p_min_x_limit_ = -10.0;
+    p_min_x_limit_ =  0.2;
     p_max_x_limit_ =  10.0;
     p_min_y_limit_ = -3.0;
     p_max_y_limit_ =  3.0;
@@ -185,7 +185,7 @@ void ObstacleExtractor::pk_onoffCallback(const std_msgs::Bool &msg) {\
   if(msg.data) {
     p_max_circle_radius_ = 2.5;
     p_radius_enlargement_ = 0.5;
-    p_min_x_limit_ = -3.0;
+    p_min_x_limit_ =  0.2;
     p_max_x_limit_ =  3.0;
     p_min_y_limit_ = -3.0;
     p_max_y_limit_ =  3.0;
@@ -195,7 +195,7 @@ void ObstacleExtractor::do_onoffCallback(const std_msgs::Bool &msg) {
   if(msg.data) {
     p_max_circle_radius_ = 2;
     p_radius_enlargement_ = 0.5;
-    p_min_x_limit_ = -5.0;
+    p_min_x_limit_ =  0.2;
     p_max_x_limit_ =  5.0;
     p_min_y_limit_ = -1.0;
     p_max_y_limit_ =  1.0;
@@ -205,10 +205,10 @@ void ObstacleExtractor::so_onoffCallback(const std_msgs::Bool &msg) {
   if(msg.data) {
     p_max_circle_radius_ = 0.5;
     p_radius_enlargement_ = 0.1;
-    p_min_x_limit_ = -3.0;
-    p_max_x_limit_ =  3.0;
-    p_min_y_limit_ = -1.0;
-    p_max_y_limit_ =  1.0;
+    p_min_x_limit_ =  0.2;
+    p_max_x_limit_ =  10.0;
+    p_min_y_limit_ = -10.0;
+    p_max_y_limit_ =  10.0;
   }
 }
 void ObstacleExtractor::processPoints() {

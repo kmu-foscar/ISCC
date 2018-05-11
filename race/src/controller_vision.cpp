@@ -19,9 +19,9 @@
 #define PARKING_STATE_4_THRESHOLD 100
 #define PARKING_STATE_5_THRESHOLD 100
 #define UTURN_THRESHOLD 1.5
-#define CROSSWALK_THRESHOLD 50
-#define STATIC_OBSTACLE_THRESHOLD 10
-#define MAX 12345
+#define CROSSWALK_THRESHOLD 200
+#define STATIC_OBSTACLE_THRESHOLD 30
+#define MAX 5
 #define PI 3.1415
 using namespace std;
 
@@ -164,12 +164,12 @@ void cw_onoffCallback(const std_msgs::Bool &msg) {
 void do_onoffCallback(const std_msgs::Bool &msg) {
     if(do_onoff != msg.data) {
 	if(do_onoff) {
-	    system("rosnode kill urg_node");
-	    system("rosrun urg_node urg_node _ip_address:=192.168.2.11 _angle_min:=-1.57 _angle_max:=1.57");
+	    system("rosnode kill connect_to_urg_node");
+	    system("rosrun urg_node urg_node _ip_address:=192.168.0.10 _angle_min:=-1.57 _angle_max:=1.57");
 	}
 	else {
-	    system("rosnode kill urg_node");
-	    system("rosrun urg_node urg_node _ip_address:=192.168.2.11 _angle_min:=-0.29 _angle_max:=0.29");
+	    system("rosnode kill connect_to_urg_node");
+	    system("rosrun urg_node urg_node _ip_address:=192.168.0.10 _angle_min:=-0.29 _angle_max:=0.29");
 	}
     }
     do_onoff = msg.data;
@@ -258,19 +258,17 @@ void cw_operate() {
 	ld->operate();
 	keep_lane(&control_msg);
 	ld->stop_line();
+	printf("stop_Y : %d\n", ld->stop_y);
 	if(ld->stop_y >= CROSSWALK_THRESHOLD){
 		crosswalk_state = 1;
 		control_msg.throttle = 0;
-		begin = clock();
 	}
 	break;
 
 	case 1 :
-	end = clock();
-	if((end - begin)/CLOCKS_PER_SEC >= 3.f) {
-		return_msg.data = MODE_CROSSWALK;
+	ros::Duration(3).sleep();
+	return_msg.data = MODE_CROSSWALK;
         return_sig_pub.publish(return_msg);
-	}
 	break;
 	}
 }
@@ -404,7 +402,7 @@ float cal_lookahead_op_error() {
 
 void keep_lane(race::drive_values* control_msg) {
     int speed = MAX_SPEED / 2;
-    const int Xshift = 320;
+    const int Xshift = 400;
     const int Xspeed = 5;
     float op_error;
     Point op;
@@ -568,7 +566,7 @@ void so_operate(){
       return_sig_pub.publish(return_msg);
     }
 
-    if(obstacles_data.circles.size() == 0)
+    if(minimumL == minimumR)
       ++so_cnt;
     else
       so_cnt = 0;

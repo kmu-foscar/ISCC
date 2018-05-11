@@ -20,13 +20,16 @@ labels = ['no sign', 'crosswalk', 'static obstacle', 'dynamic obstacle', 'branch
 buff = 0
 prev_index = -1
 cam = cv2.VideoCapture()
-
-def talker(classification):
-	global prev_index, buff
+count__ = 0 
+def talker(classification, img):
+	global prev_index, buff, count__
 	
 	if not rospy.is_shutdown():
 		rospy.loginfo(classification)
 		cur_index = labels.index(classification)
+		filename = "/home/nvidia/ISCC/" + str(cur_index) + "/" + str(count__) + ".jpg"
+		count__ = count__ + 1
+		cv2.imwrite(filename, img)
 		if cur_index != prev_index :
 			buff = 0
 			prev_index = cur_index
@@ -65,10 +68,12 @@ if __name__ == '__main__' :
 				if(not sc_onoff or not cam.isOpened()) :
 					continue
                 		ret_val, img = cam.read()
+				img = cv2.flip(img,0)
+				img = cv2.flip(img,1)
 				img_crop = img[0:320, 384:640]
                 		cv2.imshow('img', img)
 				cv2.imshow('img_crop', img_crop)
-			
+							
 
 		                if ret_val:
                 		        start_time = time.time()
@@ -92,7 +97,7 @@ if __name__ == '__main__' :
 
                 		        print(classification)
 		                        print()
-					talker(classification)
+					talker(classification, img_crop)
 
                         	if cv2.waitKey(1) & 0xFF == ord('q'):
                                 	break

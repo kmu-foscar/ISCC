@@ -95,9 +95,9 @@ void Look_Ahead::operate(Mat originImg_left_LD, Mat originImg_right_LD) {
 	imshow("canny_la2", cannyImg2);
 	imshow("binaryImg1_la", binaryImg1);
 	imshow("binaryImg2_la", binaryImg2);
-	imshow("lookahead", c);
+	
 #endif
-
+	imshow("lookahead", c);
 	//output_video << c;
 	if(waitKey(10) == 0){
 		return;
@@ -230,7 +230,7 @@ bool Look_Ahead::hough_right(Mat& img, Point* p1, Point* p2){
       theta = (float)mypt2.y/100;
       a = cos(theta), b = sin(theta);
       x0 = a * rho, y0 = b * rho;
-
+      
       // cout << "pt : " << mypt2.x << ' ' << mypt2.y << endl;
 
         _x1 = int(x0 + 1000*(-b));
