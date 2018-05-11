@@ -20,13 +20,16 @@
 #define PARKING_STATE_5_THRESHOLD 100
 #define UTURN_THRESHOLD 1.5
 #define CROSSWALK_THRESHOLD 50
+#define STATIC_OBSTACLE_THRESHOLD 10
+#define MAX 12345
+#define PI 3.1415
 using namespace std;
 
 Lane_Detector* ld;
 Look_Ahead* la;
 race::drive_values control_msg;
 std_msgs::Int16 return_msg;
-ros::Subscriber sub; 
+ros::Subscriber sub;
 ros::Subscriber do_sub;
 ros::Subscriber lk_onoff_sub;
 ros::Subscriber cw_onoff_sub;
@@ -38,7 +41,7 @@ ros::Subscriber pk_onoff_sub;
 ros::Publisher control_pub;
 ros::Publisher return_sig_pub;
 
-// variables for dynamic obstacle 
+// variables for dynamic obstacle
 int do_cnt = 0;
 int obstacle_size;
 obstacle_detector::Obstacles obstacles_data;
@@ -49,6 +52,13 @@ float p_steering = -0.3f;
 float p_steering_curve = 20.f;
 float p_lookahead_curve = 10.f;
 float p_lookahead = 0.05f;
+
+// variables for static obstacle
+int so_cnt = 0;
+int isLeftObstacle, isRightObstacle;
+bool isLeftStaticPass = false;
+bool isRightStaticPass = false;
+int cnt = 0;
 
 int steering;
 int throttle;
@@ -62,6 +72,7 @@ bool pk_onoff = false;
 int parking_state;
 int uturn_state;
 int crosswalk_state;
+int static_obstacle_state;
 
 bool is_parked;
 void lk_onoffCallback(const std_msgs::Bool &msg);
@@ -73,26 +84,27 @@ void pk_onoffCallback(const std_msgs::Bool &msg);
 void obstacleCallback(const obstacle_detector::Obstacles data); // dynamic obstacle callback
 double obstacleDistance(geometry_msgs::Point &p1, geometry_msgs::Point &p2);
 void keep_lane_advanced(race::drive_values* control_msg); // base mode
-void keep_lane(race::drive_values* control_msg); // parking, Dynamic obstacle, static obstacle, Uturn, Crosswalk  
+void keep_lane(race::drive_values* control_msg); // parking, Dynamic obstacle, static obstacle, Uturn, Crosswalk
 void do_operate();
 void pk_operate();
 void ut_operate();
 void cw_operate();
+void so_operate();
 float cal_lookahead_op_error();
 
 int main(int argc, char** argv) {
     ros::init(argc, argv, "Lane_Keeper");
     ros::NodeHandle nh;
-    
+
     ld = new Lane_Detector();
     la = new Look_Ahead();
     lk_onoff_sub = nh.subscribe("lk_onoff", 1, lk_onoffCallback);
     cw_onoff_sub = nh.subscribe("cw_onoff", 1, cw_onoffCallback);
     do_onoff_sub = nh.subscribe("do_onoff", 1, do_onoffCallback);
-    so_onoff_sub = nh.subscribe("so_onoff", 1, so_onoffCallback);    
+    so_onoff_sub = nh.subscribe("so_onoff", 1, so_onoffCallback);
     ut_onoff_sub = nh.subscribe("ut_onoff", 1, ut_onoffCallback);
     pk_onoff_sub = nh.subscribe("pk_onoff", 1, pk_onoffCallback);
-    
+
     do_sub = nh.subscribe("raw_obstacles", 1, obstacleCallback);
 
     control_pub = nh.advertise<race::drive_values>("Control", 1000);
@@ -101,6 +113,9 @@ int main(int argc, char** argv) {
     la->init();
     parking_state = 0;
     uturn_state = 0;
+    static_obstacle_state = 0;
+    isLeftObstacle = 0;
+    isRightObstacle = 0;
     while(ros::ok()) {
         if(lk_onoff) {
 			printf("lane_keeping_mode\n");
@@ -110,7 +125,7 @@ int main(int argc, char** argv) {
         }
         else if(cw_onoff) {
 			printf("crosswalk_mode\n");
-			cw_operate();
+			      cw_operate();
         }
         else if(do_onoff) {
 			printf("dynamic_obstacle_mode\n");
@@ -121,8 +136,8 @@ int main(int argc, char** argv) {
         else if(so_onoff) {
 			printf("static_obstacle_mode\n");
             ld->operate();
+            so_operate();
             keep_lane(&control_msg);
-            // Hanjeong
         }
         else if(ut_onoff) {
 			printf("uturn_mode\n");
@@ -170,7 +185,7 @@ void pk_onoffCallback(const std_msgs::Bool &msg) {
 }
 
 bool isExist(int do_cnt) {
-  if(do_cnt > 80) 
+  if(do_cnt > 80)
   	return false;
   return true;
 }
@@ -184,7 +199,7 @@ void ut_operate() {
     switch (uturn_state) {
     case 0 :
     ld->operate();
-    keep_lane(&control_msg);    
+    keep_lane(&control_msg);
     for(int i = 0; i < obstacle_size; i++) {
         if(obstacles_data.circles[i].center.y > -0.55 && obstacles_data.circles[i].center.y < 0.55 && obstacles_data.circles[i].center.x > 0.015 && obstacles_data.circles[i].center.x < 5) {
             if(!flag || s.x > obstacles_data.circles[i].center.x){
@@ -193,7 +208,7 @@ void ut_operate() {
             }
         }
     }
-    
+
     if(s.x <= UTURN_THRESHOLD) {
         uturn_state = 1;
     }
@@ -228,7 +243,7 @@ void do_operate() {
     control_msg.throttle = 0;
   }
   else do_cnt++;
-	
+
   if(!isExist(do_cnt)) {
 	do_cnt = 0;
     printf("%s\n" , "go!!");
@@ -271,7 +286,7 @@ void pk_operate() {
     }
     break;
 
-    case 0 : 
+    case 0 :
     ld->parking_init();
     ld->operate();
     keep_lane(&control_msg);
@@ -302,7 +317,7 @@ void pk_operate() {
     break;
 
     case 3 :
-    ros::Duration(10).sleep(); 
+    ros::Duration(10).sleep();
     parking_state = 4;
     break;
 
@@ -325,7 +340,7 @@ void pk_operate() {
         return_sig_pub.publish(return_msg);
         ld->parking_release();
     }
-    break;    
+    break;
     }
 }
 // lookahead 포함 lane keeping 함수.
@@ -337,21 +352,21 @@ void keep_lane_advanced(race::drive_values* control_msg) {
     Point pa_2 = ld->p2;
     Point pb_1 = ld->p3;
     Point pb_2 = ld->p4;
-    
+
     pb_1.x += 640;
     pb_2.x += 640;
 
     if(ld->get_intersectpoint(pa_1, pa_2, pb_1, pb_2, &op)) {
         float error_steering = CENTER_POINT - op.x;
-        steering = p_steering * error_steering * (float)(1/(float)speed) * 5; 
-    } 
+        steering = p_steering * error_steering * (float)(1/(float)speed) * 5;
+    }
     else if(ld->is_left_error()) {
         steering = -p_steering_curve / ld->get_right_slope() * (float)(1/(float)speed) * 5;
     }
     else if(ld->is_right_error()) {
         steering = p_steering_curve / ld->get_left_slope() * (float)(1/(float)speed) * 5;
     }
-    
+
     steering = min(max(steering, -100), 100);
     //printf("steering : %d\n", steering);
     steering += 100;
@@ -371,7 +386,7 @@ float cal_lookahead_op_error() {
     Point pb_1 = ld->p3;
     Point pb_2 = ld->p4;
     float error_op;
-    
+
     if(la->get_intersectpoint(pa_1, pa_2, pb_1, pb_2, &op)) {
         error_op = CENTER_POINT_LA - op.x;
     }
@@ -384,38 +399,180 @@ float cal_lookahead_op_error() {
     else {
         error_op = 0;
     }
-    return error_op; 
+    return error_op;
 }
 
 void keep_lane(race::drive_values* control_msg) {
     int speed = MAX_SPEED / 2;
+    const int Xshift = 320;
+    const int Xspeed = 5;
     float op_error;
     Point op;
     Point pa_1 = ld->p1;
     Point pa_2 = ld->p2;
     Point pb_1 = ld->p3;
     Point pb_2 = ld->p4;
-    
+
     pb_1.x += 640;
     pb_2.x += 640;
 
+    if(so_onoff){
+      //오른쪽 장애물 발견 시 오른쪽 카메라 차선을 Xshift 만큼 왼쪽으로 이동
+      if(isRightObstacle == 1)
+      {
+          isRightStaticPass = true;
+          speed = Xspeed;
+          pb_1.x -= Xshift;
+          pb_2.x -= Xshift;
+      }
+      //왼쪽 장애물 발견 시 왼쪽 카메라 차선을 Xshift 만큼 오른쪽으로 이동
+      if(isLeftObstacle == 1)
+      {
+          isLeftStaticPass = true;
+          speed = Xspeed;
+          pa_1.x += Xshift;
+          pa_2.x += Xshift;
+      }
+    }
+
     if(ld->get_intersectpoint(pa_1, pa_2, pb_1, pb_2, &op)) {
         float error_steering = CENTER_POINT - op.x;
-        steering = p_steering * error_steering * (float)(1/(float)speed) * 5; 
-    } 
+        steering = p_steering * error_steering * (float)(1/(float)speed) * 5;
+    }
     else if(ld->is_left_error()) {
         steering = -p_steering_curve / ld->get_right_slope() * (float)(1/(float)speed) * 5;
     }
     else if(ld->is_right_error()) {
         steering = p_steering_curve / ld->get_left_slope() * (float)(1/(float)speed) * 5;
     }
-    
+
     steering = min(max(steering, -100), 100);
     steering += 100;
     control_msg->steering = steering;
     control_msg->throttle = speed;
 }
 
+void so_operate(){
+  geometry_msgs::Point car;
+  car.y = 0.0, car.x = 0.0;
 
+  geometry_msgs::Point closestLeftPoint, closestRightPoint;
+  closestLeftPoint.x = MAX, closestRightPoint.y = MAX;
+  closestLeftPoint.y = MAX, closestRightPoint.x = MAX;
 
+  double minimumL = MAX, minimumR = MAX;
+  const double rightTheta = 0.52; // 30도
+  double leftTheta = PI - rightTheta;
 
+  //앞까지의 거리
+  for(int i = 0; i < obstacles_data.circles.size(); i++)
+  {
+      geometry_msgs::Point curPoint = obstacles_data.circles[i].center;
+      geometry_msgs::Point temp;
+
+      //x축 대칭
+      curPoint.y = -curPoint.y;
+
+      //y = x 대칭
+      swap(curPoint.x, curPoint.y);
+
+      if(curPoint.y == 0.0 || curPoint.x == 0.0)
+          continue;
+
+      double angle = atan2(curPoint.y, curPoint.x);
+      double dist = (curPoint.y) * (curPoint.y) + (curPoint.x) * (curPoint.x);
+
+      //1,2사분면이 아니면
+      if(angle < 0.0)
+          continue;
+
+      //30도이상 오른쪽
+      else if(PI / 2 > angle && angle > rightTheta)
+      {
+          //오른쪽
+          if(minimumR > dist) {
+              minimumR = dist;
+              closestRightPoint = curPoint;
+          }
+      }
+      //120도이하 왼쪽
+      else if(PI / 2 < angle && angle < leftTheta)
+      {
+          //왼쪽
+          if(minimumL > dist){
+              minimumL = dist;
+              closestLeftPoint = curPoint;
+          }
+      }
+  }
+
+  //둘다 잡지 못했거나, 하나가 깜빡이면
+  if(minimumL == minimumR)
+  {
+      if((isLeftObstacle || isRightObstacle) && cnt < 10)
+      {
+          cnt++;
+          return;
+      }
+      isLeftObstacle = 0;
+      isRightObstacle = 0;
+      cnt = 0;
+  }
+  if(minimumL < minimumR) //왼쪽 장애물이 오른쪽 장애물보다 가까운데
+  {
+      if(isRightObstacle && cnt < 10) // 오른쪽 장애물이 깜박거려서 못본거였으면
+      {
+          cnt++;
+          return; //그대로
+      }
+      if(isRightObstacle) //실제로 안보이게 된거라면
+          isRightObstacle = 0;
+
+      cnt = 0;
+      isLeftObstacle = 1;
+  }
+  if(minimumR < minimumL) //오른쪽 장애물이 왼쪽 장애물보다 가까운데
+  {
+      if(isLeftObstacle && cnt < 10) // 왼쪽 장애물이 깜박였던거라면
+      {
+          cnt++;
+          return; //지금 boolean 그대로
+      }
+      if(isLeftObstacle)
+          isLeftObstacle = 0;
+      cnt = 0;
+      isRightObstacle = 1;
+  }
+
+  if(isLeftObstacle)
+      printf("Find LeftObstacle! distance Obstacle : %d \n", closestLeftPoint.x);
+  if(isRightObstacle)
+      printf("Find RightObstacle! distance Obstacle : %d \n", closestRightPoint.x);
+
+  switch(static_obstacle_state){
+    case 0:
+    if(isLeftStaticPass || isRightStaticPass){
+      static_obstacle_state = 1;
+    }
+    break;
+
+    case 1:
+    if(isLeftStaticPass && isRightStaticPass){
+      static_obstacle_state = 2;
+    }
+    break;
+
+    case 2:
+    if(so_cnt > STATIC_OBSTACLE_THRESHOLD){
+      return_msg.data = MODE_STATIC_OBSTACLE;
+      return_sig_pub.publish(return_msg);
+    }
+
+    if(obstacles_data.circles.size() == 0)
+      ++so_cnt;
+    else
+      so_cnt = 0;
+
+    break;
+  }
+}
