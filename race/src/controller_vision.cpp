@@ -37,7 +37,6 @@ ros::Subscriber do_onoff_sub;
 ros::Subscriber so_onoff_sub;
 ros::Subscriber ut_onoff_sub;
 ros::Subscriber pk_onoff_sub;
-ros::Subscriber oa_onoff_sub;
 
 ros::Publisher control_pub;
 ros::Publisher return_sig_pub;
@@ -70,12 +69,10 @@ bool do_onoff = false;
 bool so_onoff = false;
 bool ut_onoff = false;
 bool pk_onoff = false;
-bool oa_onoff = false;
 int parking_state;
 int uturn_state;
 int crosswalk_state;
 int static_obstacle_state;
-int obstacle_avoider_state;
 bool is_parked;
 int cnt_pk = 0;
 void lk_onoffCallback(const std_msgs::Bool &msg);
@@ -84,7 +81,6 @@ void do_onoffCallback(const std_msgs::Bool &msg);
 void so_onoffCallback(const std_msgs::Bool &msg);
 void ut_onoffCallback(const std_msgs::Bool &msg);
 void pk_onoffCallback(const std_msgs::Bool &msg);
-void oa_onoffCallback(const std_msgs::Bool &msg);
 void obstacleCallback(const obstacle_detector::Obstacles data); // dynamic obstacle callback
 double obstacleDistance(geometry_msgs::Point &p1, geometry_msgs::Point &p2);
 void keep_lane_advanced(race::drive_values* control_msg); // base mode
@@ -94,7 +90,6 @@ void pk_operate();
 void ut_operate();
 void cw_operate();
 void so_operate();
-void oa_operate();
 
 float cal_lookahead_op_error();
 
@@ -110,7 +105,6 @@ int main(int argc, char** argv) {
     so_onoff_sub = nh.subscribe("so_onoff", 1, so_onoffCallback);
     ut_onoff_sub = nh.subscribe("ut_onoff", 1, ut_onoffCallback);
     pk_onoff_sub = nh.subscribe("pk_onoff", 1, pk_onoffCallback);
-    oa_onoff_sub = nh.subscribe("oa_onoff", 1, oa_onoffCallback);
     do_sub = nh.subscribe("raw_obstacles", 1, obstacleCallback);
 
     control_pub = nh.advertise<race::drive_values>("Control", 1000);
@@ -124,43 +118,42 @@ int main(int argc, char** argv) {
     isRightObstacle = 0;
     while(ros::ok()) {
         if(lk_onoff) {
-			printf("lane_keeping_mode\n");
+	    printf("lane_keeping_mode\n");
             ld->operate();
             la->operate(ld->originImg_left, ld->originImg_right);
             keep_lane_advanced(&control_msg);
+	    control_pub.publish(control_msg);
         }
         else if(cw_onoff) {
-			printf("crosswalk_mode\n");
-			      cw_operate();
+	    printf("crosswalk_mode\n");
+	    cw_operate();
+	    control_pub.publish(control_msg);
         }
         else if(do_onoff) {
-			printf("dynamic_obstacle_mode\n");
+	    printf("dynamic_obstacle_mode\n");
             ld->operate();
             keep_lane(&control_msg);
             do_operate();
+	    control_pub.publish(control_msg);
         }
         else if(so_onoff) {
-			printf("static_obstacle_mode\n");
+	    printf("static_obstacle_mode\n");
             ld->operate();
             so_operate();
             keep_lane(&control_msg);
+	    control_pub.publish(control_msg);
         }
         else if(ut_onoff) {
-			printf("uturn_mode\n");
+	    printf("uturn_mode\n");
             ut_operate();
+	    control_pub.publish(control_msg);
         }
         else if(pk_onoff) {
-			printf("parking_mode\n");
+	    printf("parking_mode\n");
 	    printf("%d\n", parking_state);
             pk_operate();
+	    control_pub.publish(control_msg);
         }
-	else if(oa_onoff) {
-			printf("obstacle_avoiding_mode\n");
-	    oa_operate();
-	    printf("obstacle_avoider_state : %d \n", obstacle_avoider_state);
-	}
-	if(obstacle_avoider_state == 0)
-        control_pub.publish(control_msg);
         ros::spinOnce();
     }
     delete ld;
@@ -195,9 +188,6 @@ void ut_onoffCallback(const std_msgs::Bool &msg) {
 }
 void pk_onoffCallback(const std_msgs::Bool &msg) {
     pk_onoff = msg.data;
-}
-void oa_onoffCallback(const std_msgs::Bool &msg) {
-    oa_onoff = msg.data;
 }
 
 bool isExist(int do_cnt) {
@@ -244,7 +234,7 @@ void ut_operate() {
     control_msg.throttle = 5;
     ld->operate();
     if(!ld->is_left_error() && !ld->is_right_error()) {
-        return_msg.data = MODE_UTURN;
+        return_msg.data = RETURN_FINISH;
         return_sig_pub.publish(return_msg);
 	ld->uturn_mode_onoff = false;
     }
@@ -265,7 +255,7 @@ void do_operate() {
   if(!isExist(do_cnt)) {
 	do_cnt = 0;
     printf("%s\n" , "go!!");
-    return_msg.data = MODE_DYNAMIC_OBSTACLE;
+    return_msg.data = RETURN_FINISH;
     return_sig_pub.publish(return_msg);
     control_msg.throttle = 7;
   }
@@ -285,7 +275,7 @@ void cw_operate() {
 
 	case 1 :
 	ros::Duration(3).sleep();
-	return_msg.data = MODE_CROSSWALK;
+	return_msg.data = RETURN_FINISH;
         return_sig_pub.publish(return_msg);
 	break;
 	}
@@ -353,7 +343,7 @@ void pk_operate() {
     case 5 :
     ld->operate();
     if(!ld->is_left_error() && !ld->is_right_error()){
-        return_msg.data = MODE_PARKING;
+        return_msg.data = RETURN_FINISH;
         return_sig_pub.publish(return_msg);
         ld->parking_release();
     }
@@ -582,7 +572,7 @@ void so_operate(){
 
     case 2:
     if(so_cnt > STATIC_OBSTACLE_THRESHOLD){
-      return_msg.data = MODE_STATIC_OBSTACLE;
+      return_msg.data = RETURN_FINISH;
       return_sig_pub.publish(return_msg);
     }
 
@@ -593,26 +583,4 @@ void so_operate(){
 
     break;
   }
-}
-
-void oa_operate() {
-   geometry_msgs::Point s;
-   bool flag = true;
-   for(int i = 0; i < obstacle_size; i++) {
-        if(obstacles_data.circles[i].center.y > -1.5 && obstacles_data.circles[i].center.y < 1.5 && obstacles_data.circles[i].center.x > 0.015 && obstacles_data.circles[i].center.x < 5) {
-            if(!flag || s.x > obstacles_data.circles[i].center.x){
-                flag = true;
-                s = obstacles_data.circles[i].center;
-            }
-        }
-    }
-    if(s.x > 1.5 || !flag) {
-	ld->operate();
-	keep_lane(&control_msg);
-	obstacle_avoider_state = 0;
-    }
-    else {
-	oa_onoff = true;
-	obstacle_avoider_state = 1;
-    }
 }

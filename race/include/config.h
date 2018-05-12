@@ -10,4 +10,9 @@
 #define MODE_UTURN 6
 #define MODE_PARKING 7
 
+#define RETURN_OPERATE 1
+#define RETURN_STOP 2
+#define RETURN_FINISH 3
+
+
 #endif

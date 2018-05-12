@@ -18,7 +18,7 @@ using namespace std;
 #define O_B_LIMIT_POW O_B_LIMIT * O_B_LIMIT
 #define O_LIMIT_POW O_LIMIT * O_LIMIT
 #define PI 3.141592
-#define MAX 12345
+#define MAX 10 
 
 //hyepro K_L only 1.3 K_R 1.0
 #define K_L 1.4
@@ -34,6 +34,8 @@ std_msgs::Int16 return_msg;
 bool oa_onoff = false;
 bool isdetected = false;
 int oa_cnt = 0;
+
+int vo_size;
 
 void oa_onoffCallback(const std_msgs::Bool &msg)
 {
@@ -183,20 +185,21 @@ double FindSteering(double &lineSlopeR, double &lineSlopeL)
 void calculator(obstacle_detector::Obstacles data)
 {
     if(!oa_onoff){
-      return;
+        return;
     }
 
-    if(isdetected && oa_cnt >= OBSTACLE_THRESHOLD) {
-  		return_msg.data = MODE_CURVE;
-      return_sig_pub.publish(return_msg);
-  	}
-
-    isdetected = data.circles.size() >= 3 ? true : false;
-
-    if(data.circles.size() == 0)
-      ++oa_cnt;
-    else
-      oa_cnt = 0;
+    if(!isdetected) // OA mode starting condition
+    {
+        isdetected = data.circles.size() >= 15 ? true : false;
+	if(isdetected) {
+	    return_msg.data = RETURN_OPERATE;
+            return_sig_pub.publish(return_msg);
+	}
+	else {
+	    return_msg.data = RETURN_STOP;
+            return_sig_pub.publish(return_msg);
+	}
+    }
 
     //left obstacle pointer
     geometry_msgs::Point pl1, pl2;
@@ -205,14 +208,27 @@ void calculator(obstacle_detector::Obstacles data)
 
     //left Slope, Right Slope
     double lineSlopeL, lineSlopeR;
-
+    vo_size = 0;
     //y 축과 x축을 바꾼다.
+    geometry_msgs::Point car;
+    car.x = 0; car.y = 0;
     for(int i = 0; i < data.circles.size(); i++)
     {
-		double temp = data.circles[i].center.x;
-		data.circles[i].center.x = data.circles[i].center.y;
-		data.circles[i].center.y = temp;
+	double temp = data.circles[i].center.x;
+	data.circles[i].center.x = data.circles[i].center.y;
+	data.circles[i].center.y = temp;
+	if(ObstacleDistanceSquare(car, data.circles[i].center) <= 25.f) {
+		vo_size++;
 	}
+    }
+    if(vo_size == 0)
+        ++oa_cnt;
+    else
+        oa_cnt = 0;
+    if(isdetected && oa_cnt >= OBSTACLE_THRESHOLD) { // oa off
+        return_msg.data = RETURN_FINISH;
+        return_sig_pub.publish(return_msg);
+    }
     //점을 찾으면 true 못찾으면 false
     //left point 0, left point2 1, right point 2, right point2 3
     bool find[4] = { false, false, false, false };
@@ -223,18 +239,18 @@ void calculator(obstacle_detector::Obstacles data)
 	//좌우 첫번째 점이 모두 검출되지 않으면
     if(!find[0] && !find[2])
     {
-		msg.steering = 100;
-		msg.throttle = 5;
-        	pub.publish(msg);
-	    return;
+	msg.steering = 100;
+	msg.throttle = 5;
+        pub.publish(msg);
+	return;
     }
 
-	else if(!find[2]&&!find[3])
-	{
-		msg.steering = 200;
-		pub.publish(msg);
-		return;
-	}
+    else if(!find[2]&&!find[3])
+    {
+	msg.steering = 200;
+	pub.publish(msg);
+	return;
+    }
 
     //좌우 첫번째 장애물만 검출 시
     if(!find[1] && !find[3])
@@ -280,22 +296,24 @@ void calculator(obstacle_detector::Obstacles data)
 
         steering = FindSteering(lineSlopeR, lineSlopeL);
     }
-	steering = steering / PI * 200;
-	steering -= 100;
-	if(steering <= 0)
-		steering *= K_L; // -100 * K_S < steering * K_S < 100 * K_S
-	else
-		steering *= K_R;
+    steering = steering / PI * 200;
+    steering -= 100;
+    if(steering <= 0)
+	steering *= K_L; // -100 * K_S < steering * K_S < 100 * K_S
+    else
+	steering *= K_R;
 
-	msg.steering = steering + 100;
-	if(msg.steering < 0)
-		msg.steering = 0;
-	else if(msg.steering > 200)
-		msg.steering = 200;
-	msg.throttle = 5;
-
+    msg.steering = steering + 100;
+    if(msg.steering < 0)
+	msg.steering = 0;
+    else if(msg.steering > 200)
+	msg.steering = 200;
+    msg.throttle = 5;
+    
     printf("steering : %d speed : %d\n", msg.steering, 1);
-	pub.publish(msg);
+    if(isdetected) {
+    	pub.publish(msg);
+    }
 }
 
 int main(int argc,	 char* argv[])
