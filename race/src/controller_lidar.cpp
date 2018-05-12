@@ -323,5 +323,6 @@ int main(int argc,	 char* argv[])
   oa_onoff_sub = nh.subscribe("oa_onoff", 1, oa_onoffCallback);
 	ros::Subscriber sub = nh.subscribe("raw_obstacles", 1, calculator);
 	pub = nh.advertise<race::drive_values> ("Control", 100);
+	return_sig_pub = nh.advertise<std_msgs::Int16>("return_signal", 1);
 	ros::spin();
 }
