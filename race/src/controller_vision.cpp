@@ -37,6 +37,7 @@ ros::Subscriber do_onoff_sub;
 ros::Subscriber so_onoff_sub;
 ros::Subscriber ut_onoff_sub;
 ros::Subscriber pk_onoff_sub;
+ros::Subscriber oa_onoff_sub;
 
 ros::Publisher control_pub;
 ros::Publisher return_sig_pub;
@@ -59,7 +60,7 @@ int isLeftObstacle, isRightObstacle;
 bool isLeftStaticPass = false;
 bool isRightStaticPass = false;
 int cnt = 0;
-
+int nayeon = -1;
 int steering;
 int throttle;
 
@@ -69,18 +70,21 @@ bool do_onoff = false;
 bool so_onoff = false;
 bool ut_onoff = false;
 bool pk_onoff = false;
+bool oa_onoff = false;
 int parking_state;
 int uturn_state;
 int crosswalk_state;
 int static_obstacle_state;
-
+int obstacle_avoider_state;
 bool is_parked;
+int cnt_pk = 0;
 void lk_onoffCallback(const std_msgs::Bool &msg);
 void cw_onoffCallback(const std_msgs::Bool &msg);
 void do_onoffCallback(const std_msgs::Bool &msg);
 void so_onoffCallback(const std_msgs::Bool &msg);
 void ut_onoffCallback(const std_msgs::Bool &msg);
 void pk_onoffCallback(const std_msgs::Bool &msg);
+void oa_onoffCallback(const std_msgs::Bool &msg);
 void obstacleCallback(const obstacle_detector::Obstacles data); // dynamic obstacle callback
 double obstacleDistance(geometry_msgs::Point &p1, geometry_msgs::Point &p2);
 void keep_lane_advanced(race::drive_values* control_msg); // base mode
@@ -90,6 +94,8 @@ void pk_operate();
 void ut_operate();
 void cw_operate();
 void so_operate();
+void oa_operate();
+
 float cal_lookahead_op_error();
 
 int main(int argc, char** argv) {
@@ -104,7 +110,7 @@ int main(int argc, char** argv) {
     so_onoff_sub = nh.subscribe("so_onoff", 1, so_onoffCallback);
     ut_onoff_sub = nh.subscribe("ut_onoff", 1, ut_onoffCallback);
     pk_onoff_sub = nh.subscribe("pk_onoff", 1, pk_onoffCallback);
-
+    oa_onoff_sub = nh.subscribe("oa_onoff", 1, oa_onoffCallback);
     do_sub = nh.subscribe("raw_obstacles", 1, obstacleCallback);
 
     control_pub = nh.advertise<race::drive_values>("Control", 1000);
@@ -145,8 +151,15 @@ int main(int argc, char** argv) {
         }
         else if(pk_onoff) {
 			printf("parking_mode\n");
+	    printf("%d\n", parking_state);
             pk_operate();
         }
+	else if(oa_onoff) {
+			printf("obstacle_avoiding_mode\n");
+	    oa_operate();
+	    printf("obstacle_avoider_state : %d \n", obstacle_avoider_state);
+	}
+	if(obstacle_avoider_state == 0)
         control_pub.publish(control_msg);
         ros::spinOnce();
     }
@@ -183,6 +196,9 @@ void ut_onoffCallback(const std_msgs::Bool &msg) {
 void pk_onoffCallback(const std_msgs::Bool &msg) {
     pk_onoff = msg.data;
 }
+void oa_onoffCallback(const std_msgs::Bool &msg) {
+    oa_onoff = msg.data;
+}
 
 bool isExist(int do_cnt) {
   if(do_cnt > 80)
@@ -198,6 +214,7 @@ void ut_operate() {
     geometry_msgs::Point s;
     switch (uturn_state) {
     case 0 :
+    ld->uturn_mode_onoff = true;
     ld->operate();
     keep_lane(&control_msg);
     for(int i = 0; i < obstacle_size; i++) {
@@ -229,6 +246,7 @@ void ut_operate() {
     if(!ld->is_left_error() && !ld->is_right_error()) {
         return_msg.data = MODE_UTURN;
         return_sig_pub.publish(return_msg);
+	ld->uturn_mode_onoff = false;
     }
     break;
     }
@@ -275,12 +293,13 @@ void cw_operate() {
 void pk_operate() {
     switch (parking_state) {
     case -1:
-    end = clock();
-    if((end - begin)/CLOCKS_PER_SEC >= 2.5f) {
+    ++cnt_pk;
+    if(cnt_pk >= 80) {
         if(is_parked){
             parking_state = 5;
         }
         parking_state = 1;
+	cnt = 0;
     }
     break;
 
@@ -341,6 +360,7 @@ void pk_operate() {
     break;
     }
 }
+
 // lookahead 포함 lane keeping 함수.
 void keep_lane_advanced(race::drive_values* control_msg) {
     int speed = MAX_SPEED;
@@ -573,4 +593,26 @@ void so_operate(){
 
     break;
   }
+}
+
+void oa_operate() {
+   geometry_msgs::Point s;
+   bool flag = true;
+   for(int i = 0; i < obstacle_size; i++) {
+        if(obstacles_data.circles[i].center.y > -1.5 && obstacles_data.circles[i].center.y < 1.5 && obstacles_data.circles[i].center.x > 0.015 && obstacles_data.circles[i].center.x < 5) {
+            if(!flag || s.x > obstacles_data.circles[i].center.x){
+                flag = true;
+                s = obstacles_data.circles[i].center;
+            }
+        }
+    }
+    if(s.x > 1.5 || !flag) {
+	ld->operate();
+	keep_lane(&control_msg);
+	obstacle_avoider_state = 0;
+    }
+    else {
+	oa_onoff = true;
+	obstacle_avoider_state = 1;
+    }
 }

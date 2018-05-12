@@ -12,7 +12,7 @@
 using namespace std;
 
 //장애물 인식범위
-#define O_LIMIT 5
+#define O_LIMIT 2
 //장애물간 거리
 #define O_B_LIMIT 0.8
 #define O_B_LIMIT_POW O_B_LIMIT * O_B_LIMIT
@@ -224,21 +224,14 @@ void calculator(obstacle_detector::Obstacles data)
     if(!find[0] && !find[2])
     {
 		msg.steering = 100;
-		msg.throttle = 1;
-        pub.publish(msg);
+		msg.throttle = 5;
+        	pub.publish(msg);
 	    return;
     }
 
 	else if(!find[2]&&!find[3])
 	{
 		msg.steering = 200;
-		pub.publish(msg);
-		return;
-	}
-	// 둘 중 하나만 검출 시
-	else if(!find[2]&&find[3])
-	{
-		msg.steering += 10;
 		pub.publish(msg);
 		return;
 	}

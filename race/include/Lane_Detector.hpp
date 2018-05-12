@@ -53,6 +53,8 @@ struct sLine
 
 class Lane_Detector {
 protected:
+
+	Mat park_roi;
 	float left_slope;
 	float right_slope;
 	float left_length;
@@ -576,7 +578,7 @@ bool Lane_Detector::hough_right(Mat& img, Point* p1, Point* p2) {
 
 void Lane_Detector::hough_to_cluster()
 {
-	Mat park_roi, blur_park, range_park, canny_park;
+	Mat blur_park, range_park, canny_park;
 
 
 	if (parking_state == 1) park_roi = input_right;
@@ -585,9 +587,9 @@ void Lane_Detector::hough_to_cluster()
 
 	GaussianBlur(park_roi, blur_park, Size(5, 5), 0);
 	inRange(blur_park, Scalar(180, 100, 100), Scalar(255, 255, 255), range_park);
-
+	imshow("range_park", range_park);
 	Canny(range_park, canny_park, 70, 200);
-
+	imshow("canny_park", canny_park);
 	clusterCount = 0;
 	int h_threshold = 80;
 	vector<Vec2f> lines_out_park;
@@ -711,7 +713,7 @@ void Lane_Detector::get_crosspoint()
 		}
 
 
-		line(park_img, Point(cluster[p].sx, cluster[p].sy), Point(cluster[p].ex, cluster[p].ey), Scalar(255, 0, 0), 3, LINE_AA);
+		line(park_roi, Point(cluster[p].sx, cluster[p].sy), Point(cluster[p].ex, cluster[p].ey), Scalar(255, 0, 0), 3, LINE_AA);
 	}
 
 
@@ -727,7 +729,7 @@ void Lane_Detector::get_crosspoint()
 
 		//cout << "cross = " << cross_x << " " << cross_y << endl;
 
-		circle(park_img, Point2f(cross_x, cross_y), 5, Scalar(0, 255, 0), 3, 8);
+		circle(park_roi, Point2f(cross_x, cross_y), 5, Scalar(0, 255, 0), 3, 8);
 	}
 
 	else if (clusterCount > 2 && minus_idx >= 0 && plus_idx >= 0)
@@ -742,9 +744,10 @@ void Lane_Detector::get_crosspoint()
 
 		//cout << "cross = " << cross_x << " " << cross_y << endl;
 
-		circle(park_img, Point2f(cross_x, cross_y), 5, Scalar(0, 255, 0), 3, 8);
-	}
+		circle(park_roi, Point2f(cross_x, cross_y), 5, Scalar(0, 255, 0), 3, 8);
 
+	}
+	
 	if (clusterCount >= 2)
 	{
 		if (parking_state == 1)
@@ -775,7 +778,9 @@ void Lane_Detector::get_crosspoint()
 		//if (parking_position == 1) cout << "position , x, y = " << parking_position << " " << parking_point1.x << " " << parking_point1.y << endl;
 		//else if (parking_position == 2) cout << "position , x, y = " << parking_position << " " << parking_point2.x << " " << parking_point2.y << endl;
 		//-> \C0Ӱ\E8 \B0\AA 63 ~68
+		
 	}
+	imshow("parking",park_roi);
 }
 
 void Lane_Detector::parking_init() {
