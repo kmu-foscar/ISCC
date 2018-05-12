@@ -1,0 +1,8 @@
+dynamic obstacle
+crosswalk
+curve
+branch road
+static obstacle
+parking
+uturn
+no sign

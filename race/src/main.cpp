@@ -28,8 +28,8 @@
         pub7.publish(so_onoff_msg);
         pub8.publish(do_onoff_msg);
     }
-    void signCallback(const race::sign_classes &msg) {
-        unsigned char sign_class = msg.sign_class;
+    void signCallback(const std_msgs::Int16 &msg) {
+        unsigned char sign_class = msg.data;
         printf("%d\n", sign_class);
         switch (sign_class) {
         case MODE_CROSSWALK :
@@ -107,7 +107,7 @@
     }
     void returnCallback(const std_msgs::Int16 &msg) {
         return_sig = msg.data;
-        if(return_sig > 0) {
+        if(return_sig == RETURN_FINISH) {
             lk_onoff_msg.data = true;
             sc_onoff_msg.data = true;
             oa_onoff_msg.data = false;
@@ -117,6 +117,26 @@
             so_onoff_msg.data = false;
             do_onoff_msg.data = false;
         }
+	else if(return_sig == RETURN_STOP) {
+	    lk_onoff_msg.data = true;
+	    sc_onoff_msg.data = false;
+            oa_onoff_msg.data = true;
+            cw_onoff_msg.data = false;
+            pk_onoff_msg.data = false;
+            ut_onoff_msg.data = false;
+            so_onoff_msg.data = false;
+            do_onoff_msg.data = false;   
+	}
+	else if(return_sig == RETURN_OPERATE) {
+	    lk_onoff_msg.data = false;
+	    sc_onoff_msg.data = false;
+            oa_onoff_msg.data = true;
+            cw_onoff_msg.data = false;
+            pk_onoff_msg.data = false;
+            ut_onoff_msg.data = false;
+            so_onoff_msg.data = false;
+            do_onoff_msg.data = false;   
+	}
         publish_msgs();
     }
     int main(int argc, char** argv)

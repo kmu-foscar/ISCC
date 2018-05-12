@@ -4,7 +4,7 @@ project(race)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-set (OpenCV_DIR /opt/ros/kinetic/share/OpenCV-3.3.1/)
+set (OpenCV_DIR /opt/ros/kinetic/share/OpenCV-3.3.1-dev/)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
