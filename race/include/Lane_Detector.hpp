@@ -187,7 +187,7 @@ void Lane_Detector::operate() {
 	GaussianBlur(originImg_left, filterImg1, Size(5, 5), 0);
 	GaussianBlur(originImg_right, filterImg2, Size(5, 5), 0);
 
-	if (parking_mode_onoff)
+	if (parking_mode_onoff && parking_state <= 1)
 	{
 		inRange(filterImg1, RGB_WHITE_LOWER, RGB_WHITE_UPPER, binaryImg1);
 	}
@@ -753,7 +753,9 @@ void Lane_Detector::parking_init() {
 
 void Lane_Detector::parking_release() {
 	capture_park.release();
+	parking_state = 0;
 	parking_mode_onoff = false;
+	
 }
 
 void Lane_Detector::stop_line()
@@ -768,7 +770,6 @@ void Lane_Detector::stop_line()
 	if (uturn_mode_onoff)
 	{
 		GaussianBlur(stop_img, roi_stop, Size(5, 5), 0);
-
 		cvtColor(roi_stop, roi_stop, COLOR_BGR2HSV);
 		inRange(img_hsv, HSV_YELLOW_LOWER, HSV_YELLOW_UPPER, range_stop);
 		Canny(range_stop, canny_stop, 70, 200);
