@@ -45,8 +45,7 @@ ros::Publisher return_sig_pub;
 int do_cnt = 0;
 int obstacle_size;
 obstacle_detector::Obstacles obstacles_data;
-clock_t begin, end;
-
+ros::Time begin, end;
 // variables for lane keeper
 float p_steering = -0.3f;
 float p_steering_curve = 20.f;
@@ -276,15 +275,15 @@ void cw_operate() {
 	case 1 :
 	ros::Duration(3).sleep();
 	return_msg.data = RETURN_FINISH;
-        return_sig_pub.publish(return_msg);
+    return_sig_pub.publish(return_msg);
 	break;
 	}
 }
 void pk_operate() {
     switch (parking_state) {
     case -1:
-    ++cnt_pk;
-    if(cnt_pk >= 80) {
+    end = ros::Time::now();
+    if(end  >= 80) {
         if(is_parked){
             parking_state = 5;
         }
@@ -300,19 +299,19 @@ void pk_operate() {
     if(ld->parking_point2.y < PARKING_STATE_1_THRESHOLD) {
         parking_state = -1;
 	    ld->parking_state = 1;
-        begin = clock();
+        begin = ros::Time::now();
         control_msg.steering = 200; // right max steer
         control_msg.throttle = 5;
     }
     break;
 
     case 1 :
-
     ld->operate();
     if(!ld->is_left_error() && !ld->is_right_error()){
         parking_state = 2;
     }
     break;
+
     case 2 :
     ld->operate();
     keep_lane(&control_msg);
@@ -334,13 +333,14 @@ void pk_operate() {
     control_msg.throttle = -5;
     if(ld->stop_parking.y < PARKING_STATE_4_THRESHOLD) {
         parking_state = -1;
-        begin = clock();
+        begin = ros::Time::now();
         control_msg.steering = 200; // right max steer
         control_msg.throttle = -5;
     }
     break;
 
     case 5 :
+    ld->parking_state = 2;    
     ld->operate();
     if(!ld->is_left_error() && !ld->is_right_error()){
         return_msg.data = RETURN_FINISH;
