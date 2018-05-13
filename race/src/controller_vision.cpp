@@ -13,12 +13,12 @@
 #define CENTER_POINT 640
 #define CENTER_POINT_LA 640
 #define MAX_SPEED 12
-#define PARKING_STATE_1_THRESHOLD 100
+#define PARKING_STATE_0_THRESHOLD 100
 #define PARKING_STATE_2_THRESHOLD 100
-#define PARKING_STATE_3_THRESHOLD 100
 #define PARKING_STATE_4_THRESHOLD 100
-#define PARKING_STATE_5_THRESHOLD 100
-#define UTURN_THRESHOLD 1.5
+#define PARKING_LIDAR_THRESHOLD 2.f
+#define UTURN_LIDAR_THRESHOLD 1.5
+#define UTURN_VISION_THRESHOLD 50
 #define CROSSWALK_THRESHOLD 200
 #define STATIC_OBSTACLE_THRESHOLD 30
 #define MAX 5
@@ -70,9 +70,11 @@ bool ut_onoff = false;
 bool pk_onoff = false;
 int parking_state;
 int uturn_state;
+int ut_cnt = 0;
 int crosswalk_state;
 int static_obstacle_state;
 bool is_parked;
+bool is_front_parking;
 int cnt_pk = 0;
 void lk_onoffCallback(const std_msgs::Bool &msg);
 void cw_onoffCallback(const std_msgs::Bool &msg);
@@ -111,6 +113,8 @@ int main(int argc, char** argv) {
     ld->init();
     la->init();
     parking_state = 0;
+    is_parked = false;
+    is_front_parking = false;
     uturn_state = 0;
     static_obstacle_state = 0;
     isLeftObstacle = 0;
@@ -168,14 +172,14 @@ void cw_onoffCallback(const std_msgs::Bool &msg) {
 }
 void do_onoffCallback(const std_msgs::Bool &msg) {
     if(do_onoff != msg.data) {
-	if(do_onoff) {
-	    system("rosnode kill connect_to_urg_node");
-	    system("rosrun urg_node urg_node _ip_address:=192.168.0.10 _angle_min:=-1.57 _angle_max:=1.57");
-	}
-	else {
-	    system("rosnode kill connect_to_urg_node");
-	    system("rosrun urg_node urg_node _ip_address:=192.168.0.10 _angle_min:=-0.29 _angle_max:=0.29");
-	}
+        if(do_onoff) {
+            system("rosnode kill connect_to_urg_node");
+            system("rosrun urg_node urg_node _ip_address:=192.168.0.10 _angle_min:=-1.57 _angle_max:=1.57");
+        }
+        else {
+            system("rosnode kill connect_to_urg_node");
+            system("rosrun urg_node urg_node _ip_address:=192.168.0.10 _angle_min:=-0.29 _angle_max:=0.29");
+        }
     }
     do_onoff = msg.data;
 }
@@ -221,10 +225,16 @@ void ut_operate() {
     break;
 
     case 1 :
-    control_msg.steering = 0;
-    control_msg.throttle = 5;
+    control_msg.steering = 0; // max left steering
+    control_msg.throttle = 5; 
     if(obstacle_size == 0) {
-        uturn_state = 2;
+        ut_cnt++
+        if(ut_cnt >= 80) {
+            uturn_state = 2;
+        }
+    }
+    else {
+        ut_cnt = 0;
     }
     break;
 
@@ -232,7 +242,7 @@ void ut_operate() {
     control_msg.steering = 0;
     control_msg.throttle = 5;
     ld->operate();
-    if(ld->stop_y >= 50) {
+    if(ld->stop_y >= UTURN_VISION_THRESHOLD) {
         uturn_state = 3;
     }
     break;
@@ -289,8 +299,13 @@ void cw_operate() {
 	}
 }
 void pk_operate() {
+    geometry_msgs::Point car;
+    car.x = 0; car.y = 0;
+    int dist_car = 0;
     switch (parking_state) {
     case -1:
+    control_msg.steering = 200; // right max steer
+    control_msg.throttle = 5;
     end = ros::Time::now().toSec();
     if(end - begin >= 2.5f) {
         if(is_parked){
@@ -304,17 +319,27 @@ void pk_operate() {
     ld->parking_init();
     ld->operate();
     keep_lane(&control_msg);
-    if(ld->parking_point2.y < PARKING_STATE_1_THRESHOLD) {
+    if(!is_front_parking && ld->parking_point1.y > 0) {
+        for(int i = 0; i < obstacle_size; i++) {
+            if(obstacles_data.circles[i].center.x > 0 && obstacleDistance(car, obstacles_data.circles[i]) < PARKING_LIDAR_THRESHOLD) {
+                ld->parking_release();
+                is_front_parking = true;
+                parking_state = 6;
+                break;
+            }
+        }
+    }
+    if(ld->parking_point2.y >= PARKING_STATE_0_THRESHOLD) {
         parking_state = -1;
 	    ld->parking_state = 1;
         begin = ros::Time::now().toSec();
-        control_msg.steering = 200; // right max steer
-        control_msg.throttle = 5;
     }
     break;
 
     case 1 :
     ld->operate();
+    control_msg.steering = 200; // right max steer
+    control_msg.throttle = 5;
     if(!ld->is_left_error() && !ld->is_right_error()){
         parking_state = 2;
     }
@@ -323,7 +348,7 @@ void pk_operate() {
     case 2 :
     ld->operate();
     keep_lane(&control_msg);
-    if(ld->stop_parking.y > PARKING_STATE_2_THRESHOLD) {
+    if(ld->stop_parking.y >= PARKING_STATE_2_THRESHOLD) {
         control_msg.throttle = 0;
         is_parked = true;
         begin = ros::Time::now().toSec();
@@ -332,6 +357,8 @@ void pk_operate() {
     break;
 
     case 3 :
+    control_msg.throttle = 0;
+    control_msg.steering = 100;
     end = ros::Time::now().toSec();
     if(end - begin >= 10.f) {
         parking_state = 4;
@@ -357,6 +384,15 @@ void pk_operate() {
         return_msg.data = RETURN_FINISH;
         return_sig_pub.publish(return_msg);
         ld->parking_release();
+    }
+    break;
+
+    case 6 :
+    ld->operate();
+    keep_lane(&control_msg);
+    if(obstacle_size == 0) {
+        ld->parking_init();
+        parking_state = 0;
     }
     break;
     }
@@ -594,4 +630,8 @@ void so_operate(){
 
     break;
   }
+}
+
+double obstacleDistance(geometry_msgs::Point &p1, geometry_msgs::Point &p2) {
+    return sqrt((p2.y - p1.y) * (p2.y - p1.y) + (p2.x - p1.x) * (p2.x - p1.x));
 }
