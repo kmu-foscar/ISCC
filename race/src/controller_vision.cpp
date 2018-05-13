@@ -45,7 +45,7 @@ ros::Publisher return_sig_pub;
 int do_cnt = 0;
 int obstacle_size;
 obstacle_detector::Obstacles obstacles_data;
-ros::Time begin, end;
+double begin, end;
 // variables for lane keeper
 float p_steering = -0.3f;
 float p_steering_curve = 20.f;
@@ -117,41 +117,41 @@ int main(int argc, char** argv) {
     isRightObstacle = 0;
     while(ros::ok()) {
         if(lk_onoff) {
-	    printf("lane_keeping_mode\n");
+            printf("lane_keeping_mode\n");
             ld->operate();
             la->operate(ld->originImg_left, ld->originImg_right);
             keep_lane_advanced(&control_msg);
-	    control_pub.publish(control_msg);
+            control_pub.publish(control_msg);
         }
         else if(cw_onoff) {
-	    printf("crosswalk_mode\n");
-	    cw_operate();
-	    control_pub.publish(control_msg);
+            printf("crosswalk_mode\n");
+            cw_operate();
+            control_pub.publish(control_msg);
         }
         else if(do_onoff) {
-	    printf("dynamic_obstacle_mode\n");
+            printf("dynamic_obstacle_mode\n");
             ld->operate();
             keep_lane(&control_msg);
             do_operate();
-	    control_pub.publish(control_msg);
+            control_pub.publish(control_msg);
         }
         else if(so_onoff) {
-	    printf("static_obstacle_mode\n");
+            printf("static_obstacle_mode\n");
             ld->operate();
             so_operate();
             keep_lane(&control_msg);
-	    control_pub.publish(control_msg);
+            control_pub.publish(control_msg);
         }
         else if(ut_onoff) {
-	    printf("uturn_mode\n");
+            printf("uturn_mode\n");
             ut_operate();
-	    control_pub.publish(control_msg);
+            control_pub.publish(control_msg);
         }
         else if(pk_onoff) {
-	    printf("parking_mode\n");
-	    printf("%d\n", parking_state);
+            printf("parking_mode\n");
+            printf("%d\n", parking_state);
             pk_operate();
-	    control_pub.publish(control_msg);
+            control_pub.publish(control_msg);
         }
         ros::spinOnce();
     }
@@ -229,13 +229,22 @@ void ut_operate() {
     break;
 
     case 2 :
+    control_msg.steering = 0;
+    control_msg.throttle = 5;
+    ld->operate();
+    if(ld->stop_y >= 50) {
+        uturn_state = 3;
+    }
+    break;
+
+    case 3 :
     control_msg.steering = 200;
     control_msg.throttle = 5;
     ld->operate();
     if(!ld->is_left_error() && !ld->is_right_error()) {
         return_msg.data = RETURN_FINISH;
         return_sig_pub.publish(return_msg);
-	ld->uturn_mode_onoff = false;
+	    ld->uturn_mode_onoff = false;
     }
     break;
     }
@@ -282,13 +291,12 @@ void cw_operate() {
 void pk_operate() {
     switch (parking_state) {
     case -1:
-    end = ros::Time::now();
-    if(end  >= 80) {
+    end = ros::Time::now().toSec();
+    if(end - begin >= 2.5f) {
         if(is_parked){
             parking_state = 5;
         }
         parking_state = 1;
-	cnt = 0;
     }
     break;
 
@@ -299,7 +307,7 @@ void pk_operate() {
     if(ld->parking_point2.y < PARKING_STATE_1_THRESHOLD) {
         parking_state = -1;
 	    ld->parking_state = 1;
-        begin = ros::Time::now();
+        begin = ros::Time::now().toSec();
         control_msg.steering = 200; // right max steer
         control_msg.throttle = 5;
     }
@@ -318,13 +326,16 @@ void pk_operate() {
     if(ld->stop_parking.y > PARKING_STATE_2_THRESHOLD) {
         control_msg.throttle = 0;
         is_parked = true;
+        begin = ros::Time::now().toSec();
         parking_state = 3;
     }
     break;
 
     case 3 :
-    ros::Duration(10).sleep();
-    parking_state = 4;
+    end = ros::Time::now().toSec();
+    if(end - begin >= 10.f) {
+        parking_state = 4;
+    }
     break;
 
     case 4 :
@@ -333,7 +344,7 @@ void pk_operate() {
     control_msg.throttle = -5;
     if(ld->stop_parking.y < PARKING_STATE_4_THRESHOLD) {
         parking_state = -1;
-        begin = ros::Time::now();
+        begin = ros::Time::now().toSec();
         control_msg.steering = 200; // right max steer
         control_msg.throttle = -5;
     }
