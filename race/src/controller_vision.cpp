@@ -176,16 +176,6 @@ void cw_onoffCallback(const std_msgs::Bool &msg) {
     cw_onoff = msg.data;
 }
 void do_onoffCallback(const std_msgs::Bool &msg) {
-    if(do_onoff != msg.data) {
-	if(do_onoff) {
-	    system("rosnode kill connect_to_urg_node&");
-	    system("rosrun urg_node urg_node _ip_address:=192.168.0.10 _angle_min:=-1.57 _angle_max:=1.57&");
-	}
-	else {
-	    system("rosnode kill connect_to_urg_node&");
-	    system("rosrun urg_node urg_node _ip_address:=192.168.0.10 _angle_min:=-0.29 _angle_max:=0.29&");
-	}
-    }
     do_onoff = msg.data;
 }
 void so_onoffCallback(const std_msgs::Bool &msg) {
@@ -209,7 +199,32 @@ bool isExist(int do_cnt) {
   return true;
 }
 void obstacleCallback(const obstacle_detector::Obstacles data) {
-    obstacle_size = data.circles.size();
+
+	obstacle_size = data.circles.size();
+    
+  for(int i = 0; i < data.circles.size(); i++)
+  {
+      geometry_msgs::Point curPoint = data.circles[i].center;
+
+      //x축 대칭
+      curPoint.y = -curPoint.y;
+
+      //y = x 대칭
+      swap(curPoint.x, curPoint.y);
+
+      if(curPoint.y == 0.0 || curPoint.x == 0.0)
+          continue;
+
+      double angle = atan2(curPoint.y, curPoint.x);
+      
+      //1,2사분면이 아니면
+      if(angle < 0.0){
+          obstacle_size--;
+	  continue;
+      }
+      if((angle < -0.29 + 1.57) || (angle > 0.29 + 1.57))
+          obstacle_size--;
+   }
     obstacles_data = data;
 }
 void ut_operate() {
