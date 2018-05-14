@@ -216,7 +216,7 @@ void Lane_Detector::operate() {
 
 	Canny(binaryImg1, cannyImg1, 130, 270);
 
-	inRange(originImg_right, RGB_WHITE_LOWER, RGB_WHITE_UPPER, binaryImg2);
+	inRange(filterImg2, RGB_WHITE_LOWER, RGB_WHITE_UPPER, binaryImg2);
 	Canny(binaryImg2, cannyImg2, 130, 270);
 
 	// Mat initROI1;
