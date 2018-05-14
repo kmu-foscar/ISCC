@@ -162,6 +162,10 @@ int main(int argc, char** argv) {
 }
 
 void lk_onoffCallback(const std_msgs::Bool &msg) {
+    if(lk_onoff != msg.data)
+    {
+      ld->mode_change();
+    }
     lk_onoff = msg.data;
 }
 void cw_onoffCallback(const std_msgs::Bool &msg) {
@@ -412,7 +416,7 @@ float cal_lookahead_op_error() {
 
 void keep_lane(race::drive_values* control_msg) {
     int speed = MAX_SPEED / 2;
-    const int Xshift = 400;
+    const int Xshift = 350;
     const int Xspeed = 5;
     float op_error;
     Point op;

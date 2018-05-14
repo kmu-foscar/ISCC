@@ -113,7 +113,15 @@ public:
 	void parking_release();
 	void get_crosspoint();
 	void stop_line();
+	void mode_change();
 };
+
+void Lane_Detector::mode_change() {
+	left_error = true;
+	right_error = true;
+	left_error_count = 0;
+	right_error_count = 0;
+}
 
 bool Lane_Detector::is_left_error() {
 	return left_error;
@@ -166,8 +174,8 @@ void Lane_Detector::init() {
 	output_video.open(s_t, VideoWriter::fourcc('X', 'V', 'I', 'D'), 20, Size(1280, 480), true);
 	mask = getStructuringElement(MORPH_RECT, Size(3, 3), Point(1, 1));
 
-	left_error = false;
-	right_error = false;
+	left_error = true;
+	right_error = true;
 	left_length = 0;
 	right_length = 0;
 	parking_mode_onoff = false;
@@ -221,7 +229,7 @@ void Lane_Detector::operate() {
 	if (!left_error) {
 		v_roi(cannyImg1, initROI1, p1, p2);
 	}
-	else if(left_error && left_error_count != 0){
+	else if(!left_error && left_error_count != 0){
 		base_ROI(cannyImg1, initROI1);
 	}
 	else{
@@ -232,7 +240,7 @@ void Lane_Detector::operate() {
 	if (!right_error) {
 		v_roi(cannyImg2, initROI2, p4, p3);
 	}
-	else if(right_error && right_error_count != 0){
+	else if(!right_error && right_error_count != 0){
 		base_ROI(cannyImg2, initROI2);
 	}
 	else {
@@ -747,7 +755,7 @@ void Lane_Detector::get_crosspoint()
 		circle(park_roi, Point2f(cross_x, cross_y), 5, Scalar(0, 255, 0), 3, 8);
 
 	}
-	
+
 	if (clusterCount >= 2)
 	{
 		if (parking_state == 1)
@@ -778,7 +786,7 @@ void Lane_Detector::get_crosspoint()
 		//if (parking_position == 1) cout << "position , x, y = " << parking_position << " " << parking_point1.x << " " << parking_point1.y << endl;
 		//else if (parking_position == 2) cout << "position , x, y = " << parking_position << " " << parking_point2.x << " " << parking_point2.y << endl;
 		//-> \C0Ӱ\E8 \B0\AA 63 ~68
-		
+
 	}
 	imshow("parking",park_roi);
 }
