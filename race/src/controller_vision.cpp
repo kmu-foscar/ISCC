@@ -13,11 +13,12 @@
 #define CENTER_POINT 640
 #define CENTER_POINT_LA 640
 #define MAX_SPEED 12
-#define PARKING_STATE_0_THRESHOLD 100
-#define PARKING_STATE_2_THRESHOLD 100
-#define PARKING_STATE_4_THRESHOLD 100
-#define PARKING_LIDAR_THRESHOLD 2.f
-#define UTURN_LIDAR_THRESHOLD 1.5
+
+#define PARKING_STATE_0_THRESHOLD 50.f
+#define PARKING_STATE_2_THRESHOLD 50.f
+#define PARKING_STATE_4_THRESHOLD 50.f
+#define PARKING_LIDAR_THRESHOLD 5.f
+#define UTURN_LIDAR_THRESHOLD 3.5
 #define UTURN_VISION_THRESHOLD 50
 #define CROSSWALK_THRESHOLD 50
 #define STATIC_OBSTACLE_THRESHOLD 30
@@ -194,11 +195,16 @@ void ut_onoffCallback(const std_msgs::Bool &msg) {
     ut_onoff = msg.data;
 }
 void pk_onoffCallback(const std_msgs::Bool &msg) {
+    if(pk_onoff != msg.data) {
+	if(msg.data) {
+	    ld->parking_init();
+	}
+    }
     pk_onoff = msg.data;
 }
 
 bool isExist(int do_cnt) {
-  if(do_cnt > 80)
+  if(do_cnt > 50)
   	return false;
   return true;
 }
@@ -214,16 +220,17 @@ void ut_operate() {
     ld->uturn_mode_onoff = true;
     ld->operate();
     keep_lane(&control_msg);
+    printf("obstacle size : %d\n", obstacle_size);
     for(int i = 0; i < obstacle_size; i++) {
-        if(obstacles_data.circles[i].center.y > -0.55 && obstacles_data.circles[i].center.y < 0.55 && obstacles_data.circles[i].center.x > 0.015 && obstacles_data.circles[i].center.x < 5) {
+        if(obstacles_data.circles[i].center.y > -0.55f && obstacles_data.circles[i].center.y < 0.55f && obstacles_data.circles[i].center.x > 0.015f && obstacles_data.circles[i].center.x < 5.f) {
             if(!flag || s.x > obstacles_data.circles[i].center.x){
                 flag = true;
                 s = obstacles_data.circles[i].center;
             }
         }
     }
-
-    if(s.x <= UTURN_LIDAR_THRESHOLD) {
+    printf("%d\n", s.x);
+    if(flag && s.x <= UTURN_LIDAR_THRESHOLD) {
         uturn_state = 1;
     }
     break;
@@ -246,6 +253,7 @@ void ut_operate() {
     control_msg.steering = 0;
     control_msg.throttle = 5;
     ld->operate();
+    ld->stop_line();
     if(ld->stop_y >= UTURN_VISION_THRESHOLD) {
         uturn_state = 3;
     }
@@ -288,7 +296,6 @@ void cw_operate() {
 	ld->operate();
 	keep_lane(&control_msg);
 	ld->stop_line();
-	printf("stop_Y : %d\n", ld->stop_y);
 	if(ld->stop_y >= CROSSWALK_THRESHOLD){
 		crosswalk_state = 1;
 		control_msg.throttle = 0;
@@ -320,7 +327,6 @@ void pk_operate() {
     break;
 
     case 0 :
-    ld->parking_init();
     ld->operate();
     keep_lane(&control_msg);
     if(!is_front_parking && ld->parking_point1.y > 0) {
@@ -328,11 +334,14 @@ void pk_operate() {
             if(obstacles_data.circles[i].center.x > 0 && obstacleDistance(car, obstacles_data.circles[i].center) < PARKING_LIDAR_THRESHOLD) {
                 ld->parking_release();
                 is_front_parking = true;
+		printf("front parking\n");
                 parking_state = 6;
                 break;
             }
         }
     }
+    printf("stop_y : %f\n", ld->parking_point2.y);
+    //printf("stop_y : %f\n", ld->cross_y);
     if(ld->parking_point2.y >= PARKING_STATE_0_THRESHOLD) {
         parking_state = -1;
 	    ld->parking_state = 1;

@@ -314,6 +314,7 @@ void calculator(obstacle_detector::Obstacles data)
     if(isdetected) {
     	pub.publish(msg);
 	printf("steering : %d speed : %d\n", msg.steering, msg.throttle);
+	isdetected = false;
     }
 }
 
