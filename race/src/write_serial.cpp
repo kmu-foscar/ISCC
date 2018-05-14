@@ -20,6 +20,7 @@ unsigned char speed_1 = 0x00;
 unsigned char steer_0 = 0x00;
 unsigned char steer_1 = 0x00;
 unsigned char front_brake = 0x01;
+unsigned char estop = 0x00;
 
 void controlCallback(const race::drive_values::ConstPtr& msg){
 	int steer_total = 0;
@@ -31,24 +32,28 @@ void controlCallback(const race::drive_values::ConstPtr& msg){
 		speed_1 = speed_total;
 		speed_0 = 0x00;
 		front_brake = 0;
+		estop = 0x00;
 	}
 	else if(msg->throttle > -255 && msg->throttle < 0){
 		gear = 0x02;
 		speed_1 = speed_total;
 		speed_0 = 0x00;
 		front_brake = 0;
+		estop = 0x00;
 	}
 	else if(msg->throttle == 0){
 		speed_0 = 0x00;
 		speed_1 = 0x00;
 		gear = 0x01;
 		front_brake = 0x33;
+		estop = 0x01;
 	}
 	else{
 		gear = 0x01;
 		speed_0 = 0x00;
 		speed_1 = 0x00;
 		front_brake = 0x33;
+		estop = 0x01;
 	}
 	steer_total = (msg->steering-100) * 28 / 100 * 71.0;
 	cout << "steer : " << steer_total << ", speed : " << speed_total << endl;
@@ -57,10 +62,10 @@ void controlCallback(const race::drive_values::ConstPtr& msg){
 }
 int main (int argc, char** argv){
 	unsigned int steer_total = 0;
-	unsigned char str[14] = {0x53,0x54,0x58,0x01,0x00,0x00,speed_0, speed_1 ,steer_0,steer_1,front_brake,alive,0x0D,0x0A};
+	unsigned char str[14] = {0x53, 0x54, 0x58, 0x01, estop, 0x00, speed_0, speed_1, steer_0, steer_1, front_brake, alive, 0x0D, 0x0A};
 
 	ros::init(argc, argv, "serial_node");
-	ros::NodeHandle nh;				
+	ros::NodeHandle nh;
 
 	ros::Subscriber sub = nh.subscribe("Control", 10, controlCallback);
 
