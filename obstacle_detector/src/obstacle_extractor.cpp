@@ -183,12 +183,12 @@ void ObstacleExtractor::ut_onoffCallback(const std_msgs::Bool &msg) {
 }
 void ObstacleExtractor::pk_onoffCallback(const std_msgs::Bool &msg) {\
   if(msg.data) {
-    p_max_circle_radius_ = 2.5;
-    p_radius_enlargement_ = 0.5;
+    p_max_circle_radius_ = 5;
+    p_radius_enlargement_ = 1;
     p_min_x_limit_ =  0.2;
-    p_max_x_limit_ =  3.0;
-    p_min_y_limit_ = -3.0;
-    p_max_y_limit_ =  3.0;
+    p_max_x_limit_ =  7.0;
+    p_min_y_limit_ = -5.0;
+    p_max_y_limit_ =  0.0;
   }
 }
 void ObstacleExtractor::do_onoffCallback(const std_msgs::Bool &msg) {

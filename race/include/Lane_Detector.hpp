@@ -113,7 +113,15 @@ public:
 	void parking_release();
 	void get_crosspoint();
 	void stop_line();
+	void mode_change();
 };
+
+void Lane_Detector::mode_change() {
+	left_error = true;
+	right_error = true;
+	left_error_count = 0;
+	right_error_count = 0;
+}
 
 bool Lane_Detector::is_left_error() {
 	return left_error;
@@ -157,8 +165,8 @@ void Lane_Detector::init() {
 	string s_t = path.append(to_string(datetime->tm_year + 1900)).append("-").append(to_string(datetime->tm_mon + 1)).append("-").append(to_string(datetime->tm_mday)).append("_").append(to_string(datetime->tm_hour)).append(":").append(to_string(datetime->tm_min)).append(":").append(to_string(datetime->tm_sec)).append(".avi");
 
 	//capture_park = VideoCapture(3);
-	capture_left = VideoCapture(2);
-	capture_right = VideoCapture(1);
+	capture_left = VideoCapture(3);
+	capture_right = VideoCapture(2);
 	capture_left.set(CV_CAP_PROP_FRAME_WIDTH, 320);
 	capture_left.set(CV_CAP_PROP_FRAME_HEIGHT, 240);
 	capture_right.set(CV_CAP_PROP_FRAME_WIDTH, 320);
@@ -166,8 +174,8 @@ void Lane_Detector::init() {
 	output_video.open(s_t, VideoWriter::fourcc('X', 'V', 'I', 'D'), 20, Size(1280, 480), true);
 	mask = getStructuringElement(MORPH_RECT, Size(3, 3), Point(1, 1));
 
-	left_error = false;
-	right_error = false;
+	left_error = true;
+	right_error = true;
 	left_length = 0;
 	right_length = 0;
 	parking_mode_onoff = false;
@@ -196,7 +204,7 @@ void Lane_Detector::operate() {
 	GaussianBlur(originImg_left, filterImg1, Size(5, 5), 0);
 	GaussianBlur(originImg_right, filterImg2, Size(5, 5), 0);
 
-	if (parking_mode_onoff)
+	if (parking_mode_onoff && parking_state <= 1)
 	{
 		inRange(filterImg1, RGB_WHITE_LOWER, RGB_WHITE_UPPER, binaryImg1);
 	}
@@ -208,7 +216,7 @@ void Lane_Detector::operate() {
 
 	Canny(binaryImg1, cannyImg1, 130, 270);
 
-	inRange(originImg_right, RGB_WHITE_LOWER, RGB_WHITE_UPPER, binaryImg2);
+	inRange(filterImg2, RGB_WHITE_LOWER, RGB_WHITE_UPPER, binaryImg2);
 	Canny(binaryImg2, cannyImg2, 130, 270);
 
 	// Mat initROI1;
@@ -221,7 +229,7 @@ void Lane_Detector::operate() {
 	if (!left_error) {
 		v_roi(cannyImg1, initROI1, p1, p2);
 	}
-	else if(left_error && left_error_count != 0){
+	else if(!left_error && left_error_count != 0){
 		base_ROI(cannyImg1, initROI1);
 	}
 	else{
@@ -232,7 +240,7 @@ void Lane_Detector::operate() {
 	if (!right_error) {
 		v_roi(cannyImg2, initROI2, p4, p3);
 	}
-	else if(right_error && right_error_count != 0){
+	else if(!right_error && right_error_count != 0){
 		base_ROI(cannyImg2, initROI2);
 	}
 	else {
@@ -273,7 +281,7 @@ void Lane_Detector::operate() {
 	imshow("initORI2", initROI2);
 	imshow("result", c);
 #endif
-	// output_video << c;
+	output_video << c;
 	if (waitKey(10) == 0) {
 		return;
 	}
@@ -747,7 +755,7 @@ void Lane_Detector::get_crosspoint()
 		circle(park_roi, Point2f(cross_x, cross_y), 5, Scalar(0, 255, 0), 3, 8);
 
 	}
-	
+
 	if (clusterCount >= 2)
 	{
 		if (parking_state == 1)
@@ -778,7 +786,7 @@ void Lane_Detector::get_crosspoint()
 		//if (parking_position == 1) cout << "position , x, y = " << parking_position << " " << parking_point1.x << " " << parking_point1.y << endl;
 		//else if (parking_position == 2) cout << "position , x, y = " << parking_position << " " << parking_point2.x << " " << parking_point2.y << endl;
 		//-> \C0Ӱ\E8 \B0\AA 63 ~68
-		
+
 	}
 	imshow("parking",park_roi);
 }
@@ -800,7 +808,9 @@ void Lane_Detector::parking_init() {
 
 void Lane_Detector::parking_release() {
 	capture_park.release();
+	parking_state = 0;
 	parking_mode_onoff = false;
+	
 }
 
 void Lane_Detector::stop_line()
@@ -815,7 +825,6 @@ void Lane_Detector::stop_line()
 	if (uturn_mode_onoff)
 	{
 		GaussianBlur(stop_img, roi_stop, Size(5, 5), 0);
-
 		cvtColor(roi_stop, roi_stop, COLOR_BGR2HSV);
 		inRange(img_hsv, HSV_YELLOW_LOWER, HSV_YELLOW_UPPER, range_stop);
 		Canny(range_stop, canny_stop, 70, 200);
