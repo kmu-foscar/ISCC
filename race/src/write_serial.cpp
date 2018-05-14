@@ -41,8 +41,9 @@ void controlCallback(const race::drive_values::ConstPtr& msg){
 	else if(msg->throttle == 0){
 		speed_0 = 0x00;
 		speed_1 = 0x00;
-		gear = 0x01;
+		gear = 0x00;
 		front_brake = 0x33;
+		printf("brake\n");
 	}
 	else{
 		gear = 0x01;

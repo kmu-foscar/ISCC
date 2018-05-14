@@ -19,7 +19,7 @@
 #define PARKING_LIDAR_THRESHOLD 2.f
 #define UTURN_LIDAR_THRESHOLD 1.5
 #define UTURN_VISION_THRESHOLD 50
-#define CROSSWALK_THRESHOLD 200
+#define CROSSWALK_THRESHOLD 50
 #define STATIC_OBSTACLE_THRESHOLD 30
 #define MAX 5
 #define PI 3.1415
@@ -172,14 +172,14 @@ void cw_onoffCallback(const std_msgs::Bool &msg) {
 }
 void do_onoffCallback(const std_msgs::Bool &msg) {
     if(do_onoff != msg.data) {
-        if(do_onoff) {
-            system("rosnode kill connect_to_urg_node");
-            system("rosrun urg_node urg_node _ip_address:=192.168.0.10 _angle_min:=-1.57 _angle_max:=1.57");
-        }
-        else {
-            system("rosnode kill connect_to_urg_node");
-            system("rosrun urg_node urg_node _ip_address:=192.168.0.10 _angle_min:=-0.29 _angle_max:=0.29");
-        }
+	if(do_onoff) {
+	    system("rosnode kill connect_to_urg_node&");
+	    system("rosrun urg_node urg_node _ip_address:=192.168.0.10 _angle_min:=-1.57 _angle_max:=1.57&");
+	}
+	else {
+	    system("rosnode kill connect_to_urg_node&");
+	    system("rosrun urg_node urg_node _ip_address:=192.168.0.10 _angle_min:=-0.29 _angle_max:=0.29&");
+	}
     }
     do_onoff = msg.data;
 }
@@ -219,7 +219,7 @@ void ut_operate() {
         }
     }
 
-    if(s.x <= UTURN_THRESHOLD) {
+    if(s.x <= UTURN_LIDAR_THRESHOLD) {
         uturn_state = 1;
     }
     break;
@@ -228,7 +228,7 @@ void ut_operate() {
     control_msg.steering = 0; // max left steering
     control_msg.throttle = 5; 
     if(obstacle_size == 0) {
-        ut_cnt++
+        ut_cnt++;
         if(ut_cnt >= 80) {
             uturn_state = 2;
         }
@@ -321,7 +321,7 @@ void pk_operate() {
     keep_lane(&control_msg);
     if(!is_front_parking && ld->parking_point1.y > 0) {
         for(int i = 0; i < obstacle_size; i++) {
-            if(obstacles_data.circles[i].center.x > 0 && obstacleDistance(car, obstacles_data.circles[i]) < PARKING_LIDAR_THRESHOLD) {
+            if(obstacles_data.circles[i].center.x > 0 && obstacleDistance(car, obstacles_data.circles[i].center) < PARKING_LIDAR_THRESHOLD) {
                 ld->parking_release();
                 is_front_parking = true;
                 parking_state = 6;

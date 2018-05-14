@@ -157,8 +157,8 @@ void Lane_Detector::init() {
 	string s_t = path.append(to_string(datetime->tm_year + 1900)).append("-").append(to_string(datetime->tm_mon + 1)).append("-").append(to_string(datetime->tm_mday)).append("_").append(to_string(datetime->tm_hour)).append(":").append(to_string(datetime->tm_min)).append(":").append(to_string(datetime->tm_sec)).append(".avi");
 
 	//capture_park = VideoCapture(3);
-	capture_left = VideoCapture(2);
-	capture_right = VideoCapture(1);
+	capture_left = VideoCapture(3);
+	capture_right = VideoCapture(2);
 	capture_left.set(CV_CAP_PROP_FRAME_WIDTH, 320);
 	capture_left.set(CV_CAP_PROP_FRAME_HEIGHT, 240);
 	capture_right.set(CV_CAP_PROP_FRAME_WIDTH, 320);
@@ -273,7 +273,7 @@ void Lane_Detector::operate() {
 	imshow("initORI2", initROI2);
 	imshow("result", c);
 #endif
-	// output_video << c;
+	output_video << c;
 	if (waitKey(10) == 0) {
 		return;
 	}

@@ -23,7 +23,7 @@ using namespace std;
 //hyepro K_L only 1.3 K_R 1.0
 #define K_L 1.4
 #define K_R 1.4
-#define OBSTACLE_THRESHOLD 5
+#define OBSTACLE_THRESHOLD 150
 
 ros::Publisher pub;
 ros::Publisher return_sig_pub;
@@ -190,7 +190,7 @@ void calculator(obstacle_detector::Obstacles data)
 
     if(!isdetected) // OA mode starting condition
     {
-        isdetected = data.circles.size() >= 15 ? true : false;
+        isdetected = data.circles.size() >= 5 ? true : false;
 	if(isdetected) {
 	    return_msg.data = RETURN_OPERATE;
             return_sig_pub.publish(return_msg);
@@ -221,7 +221,7 @@ void calculator(obstacle_detector::Obstacles data)
 		vo_size++;
 	}
     }
-    if(vo_size == 0)
+    if(isdetected && vo_size == 0)
         ++oa_cnt;
     else
         oa_cnt = 0;
@@ -310,9 +310,10 @@ void calculator(obstacle_detector::Obstacles data)
 	msg.steering = 200;
     msg.throttle = 5;
     
-    printf("steering : %d speed : %d\n", msg.steering, 1);
+    //printf("steering : %d speed : %d\n", msg.steering, 1);
     if(isdetected) {
     	pub.publish(msg);
+	printf("steering : %d speed : %d\n", msg.steering, msg.throttle);
     }
 }
 
