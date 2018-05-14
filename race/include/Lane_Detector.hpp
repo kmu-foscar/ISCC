@@ -229,7 +229,7 @@ void Lane_Detector::operate() {
 	if (!left_error) {
 		v_roi(cannyImg1, initROI1, p1, p2);
 	}
-	else if(!left_error && left_error_count != 0){
+	else if(left_error && left_error_count != 0){
 		base_ROI(cannyImg1, initROI1);
 	}
 	else{
@@ -240,7 +240,7 @@ void Lane_Detector::operate() {
 	if (!right_error) {
 		v_roi(cannyImg2, initROI2, p4, p3);
 	}
-	else if(!right_error && right_error_count != 0){
+	else if(right_error && right_error_count != 0){
 		base_ROI(cannyImg2, initROI2);
 	}
 	else {
@@ -810,7 +810,7 @@ void Lane_Detector::parking_release() {
 	capture_park.release();
 	parking_state = 0;
 	parking_mode_onoff = false;
-	
+
 }
 
 void Lane_Detector::stop_line()
