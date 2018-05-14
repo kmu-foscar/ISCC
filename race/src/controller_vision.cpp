@@ -196,7 +196,32 @@ bool isExist(int do_cnt) {
   return true;
 }
 void obstacleCallback(const obstacle_detector::Obstacles data) {
-    obstacle_size = data.circles.size();
+
+	obstacle_size = data.circles.size();
+    
+  for(int i = 0; i < data.circles.size(); i++)
+  {
+      geometry_msgs::Point curPoint = data.circles[i].center;
+
+      //x축 대칭
+      curPoint.y = -curPoint.y;
+
+      //y = x 대칭
+      swap(curPoint.x, curPoint.y);
+
+      if(curPoint.y == 0.0 || curPoint.x == 0.0)
+          continue;
+
+      double angle = atan2(curPoint.y, curPoint.x);
+      
+      //1,2사분면이 아니면
+      if(angle < 0.0){
+          obstacle_size--;
+	  continue;
+      }
+      if((angle < -0.29 + 1.57) || (angle > 0.29 + 1.57))
+          obstacle_size--;
+   }
     obstacles_data = data;
 }
 void ut_operate() {
