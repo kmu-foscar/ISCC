@@ -21,8 +21,8 @@ using namespace std;
 #define MAX 10 
 
 //hyepro K_L only 1.3 K_R 1.0
-#define K_L 1.4
-#define K_R 1.4
+#define K_L 1.6
+#define K_R 1.3
 #define OBSTACLE_THRESHOLD 5
 
 ros::Publisher pub;
@@ -236,22 +236,14 @@ void calculator(obstacle_detector::Obstacles data)
 
     double steering, RFlag, LFlag;
 
-	//좌우 첫번째 점이 모두 검출되지 않으면
-    if(!find[0] && !find[2])
+	//좌우 첫번째 점이 hanarado 검출되지 않으면
+    if(!find[0] || !find[2])
     {
 	msg.steering = 100;
 	msg.throttle = 5;
         pub.publish(msg);
 	return;
     }
-
-    else if(!find[2]&&!find[3])
-    {
-	msg.steering = 200;
-	pub.publish(msg);
-	return;
-    }
-
     //좌우 첫번째 장애물만 검출 시
     if(!find[1] && !find[3])
     {
