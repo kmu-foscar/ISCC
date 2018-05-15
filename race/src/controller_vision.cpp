@@ -20,7 +20,7 @@
 #define PARKING_LIDAR_THRESHOLD 5.f
 #define UTURN_LIDAR_THRESHOLD 3.5
 #define UTURN_VISION_THRESHOLD 50
-#define CROSSWALK_THRESHOLD 50
+#define CROSSWALK_THRESHOLD 200
 #define STATIC_OBSTACLE_THRESHOLD 30
 #define MAX 5
 #define PI 3.1415
@@ -150,6 +150,7 @@ int main(int argc, char** argv) {
         else if(ut_onoff) {
             printf("uturn_mode\n");
             ut_operate();
+	    printf("uturun state : %d\n", uturn_state);
             control_pub.publish(control_msg);
         }
         else if(pk_onoff) {
@@ -158,6 +159,9 @@ int main(int argc, char** argv) {
             pk_operate();
             control_pub.publish(control_msg);
         }
+	else {
+	    ld->operate();
+	}
         ros::spinOnce();
     }
     delete ld;
@@ -232,7 +236,7 @@ void ut_operate() {
     geometry_msgs::Point s;
     switch (uturn_state) {
     case 0 :
-    ld->uturn_mode_onoff = true;
+    
     ld->operate();
     keep_lane(&control_msg);
     printf("obstacle size : %d\n", obstacle_size);
@@ -251,11 +255,12 @@ void ut_operate() {
     break;
 
     case 1 :
+    ld->operate();
     control_msg.steering = 0; // max left steering
     control_msg.throttle = 5; 
-    if(obstacle_size == 0) {
+    if(obstacle_size < 5) {
         ut_cnt++;
-        if(ut_cnt >= 80) {
+        if(ut_cnt >= 40) {
             uturn_state = 2;
         }
     }
@@ -267,10 +272,13 @@ void ut_operate() {
     case 2 :
     control_msg.steering = 0;
     control_msg.throttle = 5;
+    ld->uturn_mode_onoff = true;
     ld->operate();
     ld->stop_line();
+    printf("stop_y : %d\n", ld->stop_y); 
     if(ld->stop_y >= UTURN_VISION_THRESHOLD) {
         uturn_state = 3;
+	ld->uturn_mode_onoff = false;
     }
     break;
 
@@ -281,7 +289,7 @@ void ut_operate() {
     if(!ld->is_left_error() && !ld->is_right_error()) {
         return_msg.data = RETURN_FINISH;
         return_sig_pub.publish(return_msg);
-	    ld->uturn_mode_onoff = false;
+	    
     }
     break;
     }
@@ -318,6 +326,7 @@ void cw_operate() {
 	break;
 
 	case 1 :
+	ld->operate();
 	ros::Duration(3).sleep();
 	return_msg.data = RETURN_FINISH;
     return_sig_pub.publish(return_msg);
@@ -385,6 +394,7 @@ void pk_operate() {
     break;
 
     case 3 :
+    ld->operate();
     control_msg.throttle = 0;
     control_msg.steering = 100;
     end = ros::Time::now().toSec();

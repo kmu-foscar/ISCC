@@ -181,6 +181,7 @@ void Lane_Detector::init() {
 	parking_mode_onoff = false;
 	left_error_count = 0;
 	right_error_count = 0;
+	uturn_mode_onoff = false;
 }
 
 void Lane_Detector::operate() {
