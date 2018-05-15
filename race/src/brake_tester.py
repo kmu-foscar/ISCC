@@ -9,7 +9,7 @@ pub = rospy.Publisher('Control', drive_values, queue_size = 1)
 while True :
     throttle = input('throttle : ')
     steering = input('steering : ')
-    msg = control_variables()
+    msg = drive_values()
     msg.throttle = throttle
-    msg.steering = float(steering)
+    msg.steering = steering
     pub.publish(msg)

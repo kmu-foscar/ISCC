@@ -154,10 +154,10 @@ float Lane_Detector::get_left_slope() {
 }
 float Lane_Detector::get_right_slope() {
 	return right_slope;
-}
+} 
 
 void Lane_Detector::init() {
-	string path = "/home/nvidia/ISCC_Videos/";
+	string path = "/home/foscar/ISCC_Videos/";
 	struct tm* datetime;
 	time_t t;
 	t = time(NULL);
@@ -833,7 +833,7 @@ void Lane_Detector::stop_line()
 	{
 		GaussianBlur(stop_img, roi_stop, Size(5, 5), 0);
 		cvtColor(roi_stop, roi_stop, COLOR_BGR2HSV);
-		inRange(img_hsv, Scalar(10, 50, 130), Scalar(30, 160, 255), range_stop);
+		inRange(img_hsv, Scalar(20, 40, 130), Scalar(40, 160, 255), range_stop);
 		Canny(range_stop, canny_stop, 70, 200);
 		HoughLines(canny_stop, linesL, 1, CV_PI / 180, threshold, 0, 0, 0, CV_PI / 2);
 	}
@@ -892,6 +892,12 @@ void Lane_Detector::stop_line()
 
 	if (uturn_mode_onoff) stop_y = Lstop_y1;
 	else stop_y = Lstop_y2;
+
+	if(uturn_mode_onoff){
+		line(stop_img, Point(Lstop_x1, Lstop_y1), Point(Lstop_x2, Lstop_y2), Scalar(0, 0, 255), 3, LINE_AA);
+		imshow("stop",range_stop);
+		imshow("uturn", stop_img);
+	}
 
 
 }

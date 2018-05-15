@@ -45,14 +45,14 @@ void controlCallback(const race::drive_values::ConstPtr& msg){
 		speed_0 = 0x00;
 		speed_1 = 0x00;
 		gear = 0x00;
-		front_brake = 0x33;
+		front_brake = 33;
 		estop = 0x01;
 	}
 	else{
 		gear = 0x01;
 		speed_0 = 0x00;
 		speed_1 = 0x00;
-		front_brake = 0x33;
+		front_brake = 33;
 		estop = 0x01;
 	}
 	steer_total = (msg->steering-100) * 28 / 100 * 71.0;
