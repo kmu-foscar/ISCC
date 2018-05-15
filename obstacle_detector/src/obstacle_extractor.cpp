@@ -87,13 +87,13 @@ bool ObstacleExtractor::updateParams(std_srvs::Empty::Request &req, std_srvs::Em
   nh_local_.param<bool>("discard_converted_segments", p_discard_converted_segments_, true);
   nh_local_.param<bool>("transform_coordinates", p_transform_coordinates_, true);
 
-  nh_local_.param<int>("min_group_points", p_min_group_points_, 5);
+  nh_local_.param<int>("min_group_points", p_min_group_points_, 4);
 
   nh_local_.param<double>("max_group_distance", p_max_group_distance_, 0.1);
   nh_local_.param<double>("distance_proportion", p_distance_proportion_, 0.00628);
-  nh_local_.param<double>("max_split_distance", p_max_split_distance_, 0.2);
-  nh_local_.param<double>("max_merge_separation", p_max_merge_separation_, 0.2);
-  nh_local_.param<double>("max_merge_spread", p_max_merge_spread_, 0.2);
+  nh_local_.param<double>("max_split_distance", p_max_split_distance_, 0.1);
+  nh_local_.param<double>("max_merge_separation", p_max_merge_separation_, 0.05);
+  nh_local_.param<double>("max_merge_spread", p_max_merge_spread_, 0.05);
   nh_local_.param<double>("max_circle_radius", p_max_circle_radius_, 0.06);
   nh_local_.param<double>("radius_enlargement", p_radius_enlargement_, 0.01);
 
@@ -108,6 +108,12 @@ bool ObstacleExtractor::updateParams(std_srvs::Empty::Request &req, std_srvs::Em
 	   printf("p_active\n");
       if (p_use_scan_){
         scan_sub_ = nh_.subscribe("scan", 10, &ObstacleExtractor::scanCallback, this);
+
+	oa_onoff_sub_ = nh_.subscribe("oa_onoff", 1, &ObstacleExtractor::oa_onoffCallback, this); 
+	ut_onoff_sub_ = nh_.subscribe("ut_onoff", 1, &ObstacleExtractor::ut_onoffCallback, this);
+	pk_onoff_sub_ = nh_.subscribe("pk_onoff", 1, &ObstacleExtractor::pk_onoffCallback, this);
+	do_onoff_sub_ = nh_.subscribe("do_onoff", 1, &ObstacleExtractor::do_onoffCallback, this);
+	so_onoff_sub_ = nh_.subscribe("so_onoff", 1, &ObstacleExtractor::so_onoffCallback, this);
 	  }
       else if (p_use_pcl_)
         pcl_sub_ = nh_.subscribe("pcl", 10, &ObstacleExtractor::pclCallback, this);
@@ -154,7 +160,57 @@ void ObstacleExtractor::pclCallback(const sensor_msgs::PointCloud::ConstPtr pcl_
 
   processPoints();
 }
-
+// Hwancheol Callback implement 
+void ObstacleExtractor::oa_onoffCallback(const std_msgs::Bool &msg) {
+  if(msg.data) {
+    p_max_circle_radius_ = 0.15;
+    p_radius_enlargement_ = 0.01;
+    p_min_x_limit_ =  0.2;
+    p_max_x_limit_ =  10.0;
+    p_min_y_limit_ = -3.0;
+    p_max_y_limit_ =  3.0;
+  }
+}
+void ObstacleExtractor::ut_onoffCallback(const std_msgs::Bool &msg) {
+  if(msg.data) {
+    p_max_circle_radius_ = 0.15;
+    p_radius_enlargement_ = 0.01;
+    p_min_x_limit_ =  0.2;
+    p_max_x_limit_ =  10.0;
+    p_min_y_limit_ = -3.0;
+    p_max_y_limit_ =  3.0;
+  }
+}
+void ObstacleExtractor::pk_onoffCallback(const std_msgs::Bool &msg) {\
+  if(msg.data) {
+    p_max_circle_radius_ = 5;
+    p_radius_enlargement_ = 1;
+    p_min_x_limit_ =  0.2;
+    p_max_x_limit_ =  7.0;
+    p_min_y_limit_ = -5.0;
+    p_max_y_limit_ =  0.0;
+  }
+}
+void ObstacleExtractor::do_onoffCallback(const std_msgs::Bool &msg) {
+  if(msg.data) {
+    p_max_circle_radius_ = 2;
+    p_radius_enlargement_ = 0.5;
+    p_min_x_limit_ =  0.2;
+    p_max_x_limit_ =  5.0;
+    p_min_y_limit_ = -5.0;
+    p_max_y_limit_ =  5.0;
+  }
+}
+void ObstacleExtractor::so_onoffCallback(const std_msgs::Bool &msg) {
+  if(msg.data) {
+    p_max_circle_radius_ = 0.5;
+    p_radius_enlargement_ = 0.1;
+    p_min_x_limit_ =  0.2;
+    p_max_x_limit_ =  10.0;
+    p_min_y_limit_ = -10.0;
+    p_max_y_limit_ =  10.0;
+  }
+}
 void ObstacleExtractor::processPoints() {
   segments_.clear();
   circles_.clear();

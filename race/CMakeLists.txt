@@ -57,6 +57,7 @@ find_package(catkin REQUIRED COMPONENTS
 		FILES
 		control_variables.msg
 		drive_values.msg
+    sign_classes.msg
 	)
 
 ## Generate services in the 'srv' folder
