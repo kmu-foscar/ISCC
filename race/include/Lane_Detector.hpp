@@ -94,6 +94,7 @@ public:
 	int parking_position;
 	int parking_state;
 	bool uturn_mode_onoff;
+	bool isNotRequired = false;
 	Point parking_point1, parking_point2, stop_parking;
 	int stop_y;
 	Mat originImg_left;
@@ -154,7 +155,7 @@ float Lane_Detector::get_left_slope() {
 }
 float Lane_Detector::get_right_slope() {
 	return right_slope;
-} 
+}
 
 void Lane_Detector::init() {
 	string path = "/home/foscar/ISCC_Videos/";
@@ -201,6 +202,9 @@ void Lane_Detector::operate() {
 		cerr << "Empty right Image" << endl;
 		return;
 	}
+
+	if(isNotRequired == true)
+		return;
 
 	GaussianBlur(originImg_left, filterImg1, Size(5, 5), 0);
 	GaussianBlur(originImg_right, filterImg2, Size(5, 5), 0);
@@ -649,7 +653,7 @@ void Lane_Detector::hough_to_cluster()
 			{
 				for (int k = 0; k < different_rho.size(); k++)
 				{
-					if (abs(different_rho[k][0] - deg) <= 7 && (different_rho[k][1] - rho)<80 || (abs(different_rho[k][0] - deg)>7 && abs(different_rho[k][0] - deg) <= 10) && abs(different_rho[k][1] - rho)<50)// µÎ¹øÂ° Á¶°Ç ¿ø·¡ 35
+					if (abs(different_rho[k][0] - deg) <= 7 && (different_rho[k][1] - rho)<80 || (abs(different_rho[k][0] - deg)>7 && abs(different_rho[k][0] - deg) <= 10) && abs(different_rho[k][1] - rho)<50)// ï¿½Î¹ï¿½Â° ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ 35
 					{
 						cluster[k].sx += x1_;
 						cluster[k].ex += x2_;
