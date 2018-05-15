@@ -547,7 +547,7 @@ void Lane_Detector::hough_to_cluster()
 	Canny(range_park, canny_park, 70, 200);
 
 	clusterCount = 0;
-	int h_threshold = 80;
+	int h_threshold = 60;
 	vector<Vec2f> lines_out_park;
 	vector<Vec2f> different_rho;
 	memset(cluster_idx, 0, sizeof(cluster_idx));
@@ -596,7 +596,7 @@ void Lane_Detector::hough_to_cluster()
 			{
 				for (int k = 0; k < different_rho.size(); k++)
 				{
-					if (abs(different_rho[k][0] - deg) <= 5 && (different_rho[k][1] - rho)<55 || (abs(different_rho[k][0] - deg)>5 && abs(different_rho[k][0] - deg) <= 10) && abs(different_rho[k][1] - rho)<50)// 두번째 조건 원래 35
+					if (abs(different_rho[k][0] - deg) <= 7 && (different_rho[k][1] - rho)<80 || (abs(different_rho[k][0] - deg)>7 && abs(different_rho[k][0] - deg) <= 10) && abs(different_rho[k][1] - rho)<50)// 두번째 조건 원래 35
 					{
 						cluster[k].sx += x1_;
 						cluster[k].ex += x2_;
@@ -675,6 +675,11 @@ void Lane_Detector::get_crosspoint()
 
 	if (clusterCount == 2)
 	{
+		double deg1, deg2;
+
+		deg1 = (double)(cluster[0].ey - cluster[0].sy) / (cluster[0].ex - cluster[0].sx);
+		deg2 = (double)(cluster[1].ey - cluster[1].sy) / (cluster[1].ex - cluster[1].sx);
+
 		a = (double)(cluster[0].ey - cluster[0].sy) / (cluster[0].ex - cluster[0].sx);
 		b = (double)cluster[0].ey - (a* cluster[0].ex);
 		c = (double)(cluster[1].ey - cluster[1].sy) / (cluster[1].ex - cluster[1].sx);
@@ -682,6 +687,8 @@ void Lane_Detector::get_crosspoint()
 
 		cross_x = (double)(d - b) / (a - c);
 		cross_y = (double)(a* cross_x) + b;
+
+		if (deg1*deg2 > 0 && abs(deg1 - deg2) < 0.4) return;
 
 		//cout << "cross = " << cross_x << " " << cross_y << endl;
 
@@ -716,7 +723,7 @@ void Lane_Detector::get_crosspoint()
 			parking_point1.x = cross_x;
 			parking_point1.y = cross_y;
 		}
-		else if (parking_position == 1 && abs(parking_point1.x - cross_x) < 10 && abs(parking_point1.y - cross_y)<10)
+		else if (parking_position == 1  && abs(parking_point1.y - cross_y)<15)
 		{
 			parking_point1.x = cross_x;
 			parking_point1.y = cross_y;
@@ -763,7 +770,7 @@ void Lane_Detector::stop_line()
 	Mat canny_stop, range_stop, stop_img, roi_stop;
 	int threshold = 80;
 	vector<Vec2f> linesL;
-	int Lstop_x1, Lstop_x2, Lstop_y1, Lstop_y2 = 0;
+	int Lstop_x1, Lstop_x2, Lstop_y1=0, Lstop_y2 = 0;
 
 	stop_img = input_left;
 
@@ -771,7 +778,7 @@ void Lane_Detector::stop_line()
 	{
 		GaussianBlur(stop_img, roi_stop, Size(5, 5), 0);
 		cvtColor(roi_stop, roi_stop, COLOR_BGR2HSV);
-		inRange(img_hsv, HSV_YELLOW_LOWER, HSV_YELLOW_UPPER, range_stop);
+		inRange(img_hsv, Scalar(10, 50, 130), Scalar(30, 160, 255), range_stop);
 		Canny(range_stop, canny_stop, 70, 200);
 		HoughLines(canny_stop, linesL, 1, CV_PI / 180, threshold, 0, 0, 0, CV_PI / 2);
 	}
