@@ -14,11 +14,11 @@
 #define CENTER_POINT_LA 690
 #define MAX_SPEED 12
 
-#define PARKING_STATE_0_THRESHOLD 50.f
+#define PARKING_STATE_0_THRESHOLD 100.f
 #define PARKING_STATE_2_THRESHOLD 50.f
 #define PARKING_STATE_4_THRESHOLD 50.f
 #define PARKING_LIDAR_THRESHOLD 5.f
-#define UTURN_LIDAR_THRESHOLD 3.5
+#define UTURN_LIDAR_THRESHOLD 3.5f
 #define UTURN_VISION_THRESHOLD 50
 #define CROSSWALK_THRESHOLD 200
 #define STATIC_OBSTACLE_THRESHOLD 30
@@ -48,7 +48,7 @@ int obstacle_size;
 obstacle_detector::Obstacles obstacles_data;
 double begin, end;
 // variables for lane keeper
-float p_steering = -0.6f;
+float p_steering = -0.3f;
 float p_steering_curve = 20.f;
 float p_lookahead_curve = 10.f;
 float p_lookahead = 0.05f;
@@ -245,7 +245,7 @@ void ut_operate() {
     keep_lane(&control_msg);
     printf("obstacle size : %d\n", obstacle_size);
     for(int i = 0; i < obstacle_size; i++) {
-        if(obstacles_data.circles[i].center.y > -0.55f && obstacles_data.circles[i].center.y < 0.55f && obstacles_data.circles[i].center.x > 0.015f && obstacles_data.circles[i].center.x < 5.f) {
+        if(obstacles_data.circles[i].center.y > -0.55f && obstacles_data.circles[i].center.y < 0.55f && obstacles_data.circles[i].center.x > 0.015f && obstacles_data.circles[i].center.x < 10.f) {
             if(!flag || s.x > obstacles_data.circles[i].center.x){
                 flag = true;
                 s = obstacles_data.circles[i].center;
@@ -263,9 +263,9 @@ void ut_operate() {
     ld->operate();
     control_msg.steering = 0; // max left steering
     control_msg.throttle = 5; 
-    if(obstacle_size < 5) {
+    if(obstacle_size < 3) {
         ut_cnt++;
-        if(ut_cnt >= 40) {
+        if(ut_cnt >= 30) {
             uturn_state = 2;
         }
     }
@@ -353,7 +353,7 @@ void pk_operate() {
     control_msg.steering = 200; // right max steer
     control_msg.throttle = 5;
     end = ros::Time::now().toSec();
-    if(end - begin >= 2.5f) {
+    if(end - begin >= 4.5f) {
         if(is_parked){
             parking_state = 5;
         }
@@ -426,7 +426,7 @@ void pk_operate() {
     if(ld->stop_parking.y < PARKING_STATE_4_THRESHOLD) {
         parking_state = -1;
         begin = ros::Time::now().toSec();
-        control_msg.steering = 200; // right max steer
+        control_msg.steering = 0; // right max steer
         control_msg.throttle = -5;
     }
     break;
@@ -439,13 +439,16 @@ void pk_operate() {
         return_msg.data = RETURN_FINISH;
         return_sig_pub.publish(return_msg);
         ld->parking_release();
+	control_msg.throttle = 0;
     }
     break;
-
+ 
     case 6 :
     ld->isNotRequired = false;
     ld->operate();
     keep_lane(&control_msg);
+    control_msg.steering -= 100;
+    control_msg.steering += -control_msg.steering;
     if(obstacle_size == 0) {
         ld->parking_init();
         parking_state = 0;

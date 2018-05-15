@@ -190,6 +190,8 @@ void Lane_Detector::operate() {
 	capture_right >> input_right;
 
 	capture_park >> park_img;
+	flip(park_img, park_img, 1);
+	flip(park_img, park_img, 0);
 
 	resize(input_left, originImg_left, Size(640, 480), 0, 0, CV_INTER_LINEAR);
 	resize(input_right, originImg_right, Size(640, 480), 0, 0, CV_INTER_LINEAR);
