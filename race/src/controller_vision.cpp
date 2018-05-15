@@ -11,7 +11,7 @@
 #include <time.h>
 
 #define CENTER_POINT 640
-#define CENTER_POINT_LA 640
+#define CENTER_POINT_LA 690
 #define MAX_SPEED 12
 
 #define PARKING_STATE_0_THRESHOLD 50.f
@@ -48,7 +48,7 @@ int obstacle_size;
 obstacle_detector::Obstacles obstacles_data;
 double begin, end;
 // variables for lane keeper
-float p_steering = -0.3f;
+float p_steering = -0.6f;
 float p_steering_curve = 20.f;
 float p_lookahead_curve = 10.f;
 float p_lookahead = 0.05f;
@@ -123,6 +123,7 @@ int main(int argc, char** argv) {
     while(ros::ok()) {
         if(lk_onoff) {
             printf("lane_keeping_mode\n");
+	    ld->isNotRequired = false;
             ld->operate();
             la->operate(ld->originImg_left, ld->originImg_right);
             keep_lane_advanced(&control_msg);
@@ -135,6 +136,7 @@ int main(int argc, char** argv) {
         }
         else if(do_onoff) {
             printf("dynamic_obstacle_mode\n");
+	    ld->isNotRequired = false;
             ld->operate();
             keep_lane(&control_msg);
             do_operate();
@@ -142,6 +144,7 @@ int main(int argc, char** argv) {
         }
         else if(so_onoff) {
             printf("static_obstacle_mode\n");
+	    ld->isNotRequired = false;
             ld->operate();
             so_operate();
             keep_lane(&control_msg);
@@ -160,6 +163,7 @@ int main(int argc, char** argv) {
             control_pub.publish(control_msg);
         }
 	else {
+	    ld->isNotRequired = true;
 	    ld->operate();
 	}
         ros::spinOnce();
@@ -236,7 +240,7 @@ void ut_operate() {
     geometry_msgs::Point s;
     switch (uturn_state) {
     case 0 :
-    
+    ld->isNotRequired = false;
     ld->operate();
     keep_lane(&control_msg);
     printf("obstacle size : %d\n", obstacle_size);
@@ -255,6 +259,7 @@ void ut_operate() {
     break;
 
     case 1 :
+    ld->isNotRequired = true;
     ld->operate();
     control_msg.steering = 0; // max left steering
     control_msg.throttle = 5; 
@@ -273,6 +278,7 @@ void ut_operate() {
     control_msg.steering = 0;
     control_msg.throttle = 5;
     ld->uturn_mode_onoff = true;
+    ld->isNotRequired = true;
     ld->operate();
     ld->stop_line();
     printf("stop_y : %d\n", ld->stop_y); 
@@ -285,6 +291,7 @@ void ut_operate() {
     case 3 :
     control_msg.steering = 200;
     control_msg.throttle = 5;
+    ld->isNotRequired = false;
     ld->operate();
     if(!ld->is_left_error() && !ld->is_right_error()) {
         return_msg.data = RETURN_FINISH;
@@ -316,6 +323,7 @@ void do_operate() {
 void cw_operate() {
 	switch(crosswalk_state) {
 	case 0 :
+	ld->isNotRequired = false;
 	ld->operate();
 	keep_lane(&control_msg);
 	ld->stop_line();
@@ -326,6 +334,7 @@ void cw_operate() {
 	break;
 
 	case 1 :
+	ld->isNotRequired = true;
 	ld->operate();
 	ros::Duration(3).sleep();
 	return_msg.data = RETURN_FINISH;
@@ -339,6 +348,8 @@ void pk_operate() {
     int dist_car = 0;
     switch (parking_state) {
     case -1:
+    ld->isNotRequired = true;
+    ld->operate();
     control_msg.steering = 200; // right max steer
     control_msg.throttle = 5;
     end = ros::Time::now().toSec();
@@ -351,6 +362,7 @@ void pk_operate() {
     break;
 
     case 0 :
+    ld->isNotRequired = false;
     ld->operate();
     keep_lane(&control_msg);
     if(!is_front_parking && ld->parking_point1.y > 0) {
@@ -374,6 +386,7 @@ void pk_operate() {
     break;
 
     case 1 :
+    ld->isNotRequired = true;
     ld->operate();
     control_msg.steering = 200; // right max steer
     control_msg.throttle = 5;
@@ -383,6 +396,7 @@ void pk_operate() {
     break;
 
     case 2 :
+    ld->isNotRequired = false;
     ld->operate();
     keep_lane(&control_msg);
     if(ld->stop_parking.y >= PARKING_STATE_2_THRESHOLD) {
@@ -394,6 +408,7 @@ void pk_operate() {
     break;
 
     case 3 :
+    ld->isNotRequired = true;
     ld->operate();
     control_msg.throttle = 0;
     control_msg.steering = 100;
@@ -404,6 +419,7 @@ void pk_operate() {
     break;
 
     case 4 :
+    ld->isNotRequired = false;
     ld->operate();
     keep_lane(&control_msg);
     control_msg.throttle = -5;
@@ -416,7 +432,8 @@ void pk_operate() {
     break;
 
     case 5 :
-    ld->parking_state = 2;    
+    ld->parking_state = 2;  
+    ld->isNotRequired = false;  
     ld->operate();
     if(!ld->is_left_error() && !ld->is_right_error()){
         return_msg.data = RETURN_FINISH;
@@ -426,6 +443,7 @@ void pk_operate() {
     break;
 
     case 6 :
+    ld->isNotRequired = false;
     ld->operate();
     keep_lane(&control_msg);
     if(obstacle_size == 0) {

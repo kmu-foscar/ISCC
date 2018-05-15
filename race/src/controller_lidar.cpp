@@ -21,8 +21,8 @@ using namespace std;
 #define MAX 10 
 
 //hyepro K_L only 1.3 K_R 1.0
-#define K_L 1.4
-#define K_R 1.4
+#define K_L 1.6
+#define K_R 1.6
 #define OBSTACLE_THRESHOLD 30
 
 ros::Publisher pub;
@@ -190,7 +190,7 @@ void calculator(obstacle_detector::Obstacles data)
 
     if(!isdetected) // OA mode starting condition
     {
-        isdetected = data.circles.size() >= 5 ? true : false;
+        isdetected = data.circles.size() >= 10 ? true : false;
 	if(isdetected) {
 	    return_msg.data = RETURN_OPERATE;
             return_sig_pub.publish(return_msg);
