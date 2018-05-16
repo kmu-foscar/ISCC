@@ -13,7 +13,8 @@
 #define CENTER_POINT 640
 #define CENTER_POINT_LA 690
 #define MAX_SPEED 12
-
+#define MIN_SPEED 7
+#define MISSION_SPEED 5
 #define PARKING_STATE_0_THRESHOLD 100.f
 #define PARKING_STATE_2_THRESHOLD 50.f
 #define PARKING_STATE_4_THRESHOLD 50.f
@@ -59,7 +60,6 @@ int isLeftObstacle, isRightObstacle;
 bool isLeftStaticPass = false;
 bool isRightStaticPass = false;
 int cnt = 0;
-int nayeon = -1;
 int steering;
 int throttle;
 
@@ -76,7 +76,6 @@ int crosswalk_state;
 int static_obstacle_state;
 bool is_parked;
 bool is_front_parking;
-int cnt_pk = 0;
 void lk_onoffCallback(const std_msgs::Bool &msg);
 void cw_onoffCallback(const std_msgs::Bool &msg);
 void do_onoffCallback(const std_msgs::Bool &msg);
@@ -194,9 +193,9 @@ void ut_onoffCallback(const std_msgs::Bool &msg) {
 }
 void pk_onoffCallback(const std_msgs::Bool &msg) {
     if(pk_onoff != msg.data) {
-	if(msg.data) {
-	    ld->parking_init();
-	}
+        if(msg.data) {
+            ld->parking_init();
+        }
     }
     pk_onoff = msg.data;
 }
@@ -296,7 +295,8 @@ void ut_operate() {
     if(!ld->is_left_error() && !ld->is_right_error()) {
         return_msg.data = RETURN_FINISH;
         return_sig_pub.publish(return_msg);
-	    
+	    uturn_state = 0;
+        ut_cnt = 0;
     }
     break;
     }
@@ -339,6 +339,7 @@ void cw_operate() {
 	ros::Duration(3).sleep();
 	return_msg.data = RETURN_FINISH;
     return_sig_pub.publish(return_msg);
+    crosswalk_state = 0;
 	break;
 	}
 }
@@ -353,7 +354,7 @@ void pk_operate() {
     control_msg.steering = 200; // right max steer
     control_msg.throttle = 5;
     end = ros::Time::now().toSec();
-    if(end - begin >= 4.5f) {
+    if(end - begin >= 1.0f) {
         if(is_parked){
             parking_state = 5;
         }
@@ -439,7 +440,11 @@ void pk_operate() {
         return_msg.data = RETURN_FINISH;
         return_sig_pub.publish(return_msg);
         ld->parking_release();
-	control_msg.throttle = 0;
+        control_msg.throttle = 0;
+        //변수　초기화
+	    is_parked = false;
+        is_front_parking = false;
+        parking_state = 0;
     }
     break;
  
@@ -487,7 +492,7 @@ void keep_lane_advanced(race::drive_values* control_msg) {
     op_error = cal_lookahead_op_error();
     //printf("lookahead : %f\n", op_error);
     speed = (int)round((float)speed - fabs(op_error * p_lookahead));
-    speed = min(max(speed, 5), MAX_SPEED);
+    speed = min(max(speed, MIN_SPEED), MAX_SPEED);
     printf("speed : %d\n", speed);
     control_msg->steering = steering;
     control_msg->throttle = speed;
@@ -517,9 +522,8 @@ float cal_lookahead_op_error() {
 }
 
 void keep_lane(race::drive_values* control_msg) {
-    int speed = MAX_SPEED / 2;
+    int speed = MISSION_SPEED;
     const int Xshift = 350;
-    const int Xspeed = 5;
     float op_error;
     Point op;
     Point pa_1 = ld->p1;
@@ -535,7 +539,6 @@ void keep_lane(race::drive_values* control_msg) {
       if(isRightObstacle == 1)
       {
           isRightStaticPass = true;
-          speed = Xspeed;
           pb_1.x -= Xshift;
           pb_2.x -= Xshift;
       }
@@ -543,7 +546,6 @@ void keep_lane(race::drive_values* control_msg) {
       if(isLeftObstacle == 1)
       {
           isLeftStaticPass = true;
-          speed = Xspeed;
           pa_1.x += Xshift;
           pa_2.x += Xshift;
       }
@@ -680,6 +682,13 @@ void so_operate(){
     if(so_cnt > STATIC_OBSTACLE_THRESHOLD){
       return_msg.data = RETURN_FINISH;
       return_sig_pub.publish(return_msg);
+      // 변수　초기화
+      static_obstacle_state = 0;
+      so_cnt = 0;
+      isLeftStaticPass = false;
+      isRightStaticPass = false;
+      isLeftObstacle = 0;
+      isLeftObstacle = 0;
     }
 
     if(minimumL == minimumR)
