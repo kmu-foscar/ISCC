@@ -25,8 +25,10 @@ const Vec3b RGB_WHITE_LOWER = Vec3b(100, 100, 190);
 const Vec3b RGB_WHITE_UPPER = Vec3b(255, 255, 255);
 const Vec3b RGB_YELLOW_LOWER = Vec3b(225, 180, 0);
 const Vec3b RGB_YELLOW_UPPER = Vec3b(255, 255, 170);
-const Vec3b HSV_YELLOW_LOWER = Vec3b(10, 20, 130);
-const Vec3b HSV_YELLOW_UPPER = Vec3b(30, 140, 255);
+// const Vec3b HSV_YELLOW_LOWER = Vec3b(10, 20, 130);
+// const Vec3b HSV_YELLOW_UPPER = Vec3b(30, 140, 255);
+const Vec3b HSV_YELLOW_LOWER = Vec3b(10, 40, 100);
+const Vec3b HSV_YELLOW_UPPER = Vec3b(30, 220, 255);
 
 const Vec3b HLS_YELLOW_LOWER = Vec3b(20, 120, 80);
 const Vec3b HLS_YELLOW_UPPER = Vec3b(45, 200, 255);
@@ -72,7 +74,7 @@ protected:
 	int left_error_count;
 	int right_error_count;
 
-	Mat img_hsv, filterImg1, filterImg2, binaryImg1, binaryImg2, initROI1, initROI2,
+	Mat img_hsv, img_hsv1, img_hsv2, filterImg1, filterImg2, binaryImg1, binaryImg2, initROI1, initROI2,
 		mask, cannyImg1, cannyImg2, houghImg1, houghImg2, park_img;
 
 	int clusterCount;
@@ -211,19 +213,24 @@ void Lane_Detector::operate() {
 	GaussianBlur(originImg_left, filterImg1, Size(5, 5), 0);
 	GaussianBlur(originImg_right, filterImg2, Size(5, 5), 0);
 
-	if (parking_mode_onoff && parking_state <= 1)
-	{
-		inRange(filterImg1, RGB_WHITE_LOWER, RGB_WHITE_UPPER, binaryImg1);
-	}
-	else
-	{
-		cvtColor(filterImg1, img_hsv, COLOR_BGR2HSV);
-		inRange(img_hsv, HSV_YELLOW_LOWER, HSV_YELLOW_UPPER, binaryImg1);
-	}
+	// if (parking_mode_onoff && parking_state <= 1)
+	// {
+	// 	inRange(filterImg1, RGB_WHITE_LOWER, RGB_WHITE_UPPER, binaryImg1);
+	// }
+	// else
+	// {
+	// 	cvtColor(filterImg1, img_hsv, COLOR_BGR2HSV);
+	// 	inRange(img_hsv, HSV_YELLOW_LOWER, HSV_YELLOW_UPPER, binaryImg1);
+	// }
+
+	cvtColor(filterImg1, img_hsv1, COLOR_BGR2HSV);
+	cvtColor(filterImg2, img_hsv2, COLOR_BGR2HSV);
+
+
+	inRange(img_hsv1, HSV_YELLOW_LOWER, HSV_YELLOW_UPPER, binaryImg1);
+	inRange(img_hsv2, HSV_YELLOW_LOWER, HSV_YELLOW_UPPER, binaryImg2);
 
 	Canny(binaryImg1, cannyImg1, 130, 270);
-
-	inRange(filterImg2, RGB_WHITE_LOWER, RGB_WHITE_UPPER, binaryImg2);
 	Canny(binaryImg2, cannyImg2, 130, 270);
 
 	// Mat initROI1;
@@ -601,10 +608,8 @@ void Lane_Detector::hough_to_cluster()
 
 
 	GaussianBlur(park_roi, blur_park, Size(5, 5), 0);
-	inRange(blur_park, Scalar(180, 100, 100), Scalar(255, 255, 255), range_park);
-	imshow("range_park", range_park);
-	Canny(range_park, canny_park, 70, 200);
-	imshow("canny_park", canny_park);
+	cvtColor(blur_park, img_hsv, COLOR_BGR2HSV);
+	inRange(img_hsv, HSV_YELLOW_LOWER, HSV_YELLOW_UPPER, canny_park);
 	clusterCount = 0;
 	int h_threshold = 60;
 	vector<Vec2f> lines_out_park;
@@ -734,10 +739,12 @@ void Lane_Detector::get_crosspoint()
 
 	if (clusterCount == 2)
 	{
-		double deg1, deg2;
 
+		double deg1, deg2;
 		deg1 = (double)(cluster[0].ey - cluster[0].sy) / (cluster[0].ex - cluster[0].sx);
-		deg2 = (double)(cluster[1].ey - cluster[1].sy) / (cluster[1].ex - cluster[1].sx);
+  	deg2 = (double)(cluster[1].ey - cluster[1].sy) / (cluster[1].ex - cluster[1].sx);
+
+
 
 		a = (double)(cluster[0].ey - cluster[0].sy) / (cluster[0].ex - cluster[0].sx);
 		b = (double)cluster[0].ey - (a* cluster[0].ex);
@@ -750,6 +757,8 @@ void Lane_Detector::get_crosspoint()
 		if (deg1*deg2 > 0 && abs(deg1 - deg2) < 0.4) return;
 
 		//cout << "cross = " << cross_x << " " << cross_y << endl;
+
+		if(abs(deg1 - deg2) < 0.4) return;
 
 		circle(park_roi, Point2f(cross_x, cross_y), 5, Scalar(0, 255, 0), 3, 8);
 	}
@@ -783,7 +792,7 @@ void Lane_Detector::get_crosspoint()
 			parking_point1.x = cross_x;
 			parking_point1.y = cross_y;
 		}
-		else if (parking_position == 1  && abs(parking_point1.y - cross_y)<15)
+		else if (parking_position == 1 &&  abs(parking_point1.y - cross_y)<10)
 		{
 			parking_point1.x = cross_x;
 			parking_point1.y = cross_y;
