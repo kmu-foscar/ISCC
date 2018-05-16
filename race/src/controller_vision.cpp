@@ -358,7 +358,9 @@ void pk_operate() {
         if(is_parked){
             parking_state = 5;
         }
-        parking_state = 1;
+        else {
+            parking_state = 1;
+        }
     }
     break;
 
@@ -423,6 +425,9 @@ void pk_operate() {
     ld->isNotRequired = false;
     ld->operate();
     keep_lane(&control_msg);
+    control_msg.steering -= 100;
+    control_msg.steering = -control_msg.steering;
+    control_msg.steering += 100;
     control_msg.throttle = -5;
     if(ld->stop_parking.y < PARKING_STATE_4_THRESHOLD) {
         parking_state = -1;
