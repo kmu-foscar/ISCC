@@ -11,16 +11,17 @@
 #include <time.h>
 
 #define CENTER_POINT 640
-#define CENTER_POINT_LA 640
+#define CENTER_POINT_LA 690
 #define MAX_SPEED 12
-
-#define PARKING_STATE_0_THRESHOLD 50.f
+#define MIN_SPEED 7
+#define MISSION_SPEED 5
+#define PARKING_STATE_0_THRESHOLD 30.f
 #define PARKING_STATE_2_THRESHOLD 50.f
 #define PARKING_STATE_4_THRESHOLD 50.f
-#define PARKING_LIDAR_THRESHOLD 5.f
-#define UTURN_LIDAR_THRESHOLD 3.5
+#define PARKING_LIDAR_THRESHOLD 3.f
+#define UTURN_LIDAR_THRESHOLD 3.0f
 #define UTURN_VISION_THRESHOLD 50
-#define CROSSWALK_THRESHOLD 50
+#define CROSSWALK_THRESHOLD 200
 #define STATIC_OBSTACLE_THRESHOLD 30
 #define MAX 5
 #define PI 3.1415
@@ -59,7 +60,6 @@ int isLeftObstacle, isRightObstacle;
 bool isLeftStaticPass = false;
 bool isRightStaticPass = false;
 int cnt = 0;
-int nayeon = -1;
 int steering;
 int throttle;
 
@@ -76,7 +76,6 @@ int crosswalk_state;
 int static_obstacle_state;
 bool is_parked;
 bool is_front_parking;
-int cnt_pk = 0;
 void lk_onoffCallback(const std_msgs::Bool &msg);
 void cw_onoffCallback(const std_msgs::Bool &msg);
 void do_onoffCallback(const std_msgs::Bool &msg);
@@ -123,6 +122,7 @@ int main(int argc, char** argv) {
     while(ros::ok()) {
         if(lk_onoff) {
             printf("lane_keeping_mode\n");
+	    ld->isNotRequired = false;
             ld->operate();
             la->operate(ld->originImg_left, ld->originImg_right);
             keep_lane_advanced(&control_msg);
@@ -135,6 +135,7 @@ int main(int argc, char** argv) {
         }
         else if(do_onoff) {
             printf("dynamic_obstacle_mode\n");
+	    ld->isNotRequired = false;
             ld->operate();
             keep_lane(&control_msg);
             do_operate();
@@ -142,6 +143,7 @@ int main(int argc, char** argv) {
         }
         else if(so_onoff) {
             printf("static_obstacle_mode\n");
+	    ld->isNotRequired = false;
             ld->operate();
             so_operate();
             keep_lane(&control_msg);
@@ -150,6 +152,7 @@ int main(int argc, char** argv) {
         else if(ut_onoff) {
             printf("uturn_mode\n");
             ut_operate();
+	    printf("uturun state : %d\n", uturn_state);
             control_pub.publish(control_msg);
         }
         else if(pk_onoff) {
@@ -158,6 +161,10 @@ int main(int argc, char** argv) {
             pk_operate();
             control_pub.publish(control_msg);
         }
+	else {
+	    ld->isNotRequired = true;
+	    ld->operate();
+	}
         ros::spinOnce();
     }
     delete ld;
@@ -186,9 +193,9 @@ void ut_onoffCallback(const std_msgs::Bool &msg) {
 }
 void pk_onoffCallback(const std_msgs::Bool &msg) {
     if(pk_onoff != msg.data) {
-	if(msg.data) {
-	    ld->parking_init();
-	}
+        if(msg.data) {
+            ld->parking_init();
+        }
     }
     pk_onoff = msg.data;
 }
@@ -201,7 +208,7 @@ bool isExist(int do_cnt) {
 void obstacleCallback(const obstacle_detector::Obstacles data) {
 
 	obstacle_size = data.circles.size();
-    
+  if(do_onoff) {
   for(int i = 0; i < data.circles.size(); i++)
   {
       geometry_msgs::Point curPoint = data.circles[i].center;
@@ -225,6 +232,7 @@ void obstacleCallback(const obstacle_detector::Obstacles data) {
       if((angle < -0.29 + 1.57) || (angle > 0.29 + 1.57))
           obstacle_size--;
    }
+   }
     obstacles_data = data;
 }
 void ut_operate() {
@@ -232,12 +240,12 @@ void ut_operate() {
     geometry_msgs::Point s;
     switch (uturn_state) {
     case 0 :
-    ld->uturn_mode_onoff = true;
+    ld->isNotRequired = false;
     ld->operate();
     keep_lane(&control_msg);
     printf("obstacle size : %d\n", obstacle_size);
     for(int i = 0; i < obstacle_size; i++) {
-        if(obstacles_data.circles[i].center.y > -0.55f && obstacles_data.circles[i].center.y < 0.55f && obstacles_data.circles[i].center.x > 0.015f && obstacles_data.circles[i].center.x < 5.f) {
+        if(obstacles_data.circles[i].center.y > -0.55f && obstacles_data.circles[i].center.y < 0.55f && obstacles_data.circles[i].center.x > 0.015f && obstacles_data.circles[i].center.x < 10.f) {
             if(!flag || s.x > obstacles_data.circles[i].center.x){
                 flag = true;
                 s = obstacles_data.circles[i].center;
@@ -251,11 +259,13 @@ void ut_operate() {
     break;
 
     case 1 :
+    ld->isNotRequired = true;
+    ld->operate();
     control_msg.steering = 0; // max left steering
     control_msg.throttle = 5; 
-    if(obstacle_size == 0) {
+    if(obstacle_size < 3) {
         ut_cnt++;
-        if(ut_cnt >= 80) {
+        if(ut_cnt >= 30) {
             uturn_state = 2;
         }
     }
@@ -267,21 +277,27 @@ void ut_operate() {
     case 2 :
     control_msg.steering = 0;
     control_msg.throttle = 5;
+    ld->uturn_mode_onoff = true;
+    ld->isNotRequired = true;
     ld->operate();
     ld->stop_line();
+    printf("stop_y : %d\n", ld->stop_y); 
     if(ld->stop_y >= UTURN_VISION_THRESHOLD) {
         uturn_state = 3;
+	ld->uturn_mode_onoff = false;
     }
     break;
 
     case 3 :
     control_msg.steering = 200;
     control_msg.throttle = 5;
+    ld->isNotRequired = false;
     ld->operate();
     if(!ld->is_left_error() && !ld->is_right_error()) {
         return_msg.data = RETURN_FINISH;
         return_sig_pub.publish(return_msg);
-	    ld->uturn_mode_onoff = false;
+	    uturn_state = 0;
+        ut_cnt = 0;
     }
     break;
     }
@@ -308,6 +324,7 @@ void do_operate() {
 void cw_operate() {
 	switch(crosswalk_state) {
 	case 0 :
+	ld->isNotRequired = false;
 	ld->operate();
 	keep_lane(&control_msg);
 	ld->stop_line();
@@ -318,9 +335,12 @@ void cw_operate() {
 	break;
 
 	case 1 :
+	ld->isNotRequired = true;
+	ld->operate();
 	ros::Duration(3).sleep();
 	return_msg.data = RETURN_FINISH;
     return_sig_pub.publish(return_msg);
+    crosswalk_state = 0;
 	break;
 	}
 }
@@ -330,41 +350,56 @@ void pk_operate() {
     int dist_car = 0;
     switch (parking_state) {
     case -1:
+    ld->isNotRequired = true;
+    ld->operate();
     control_msg.steering = 200; // right max steer
     control_msg.throttle = 5;
+    if(is_parked) {
+	control_msg.throttle = -5;
+    }
     end = ros::Time::now().toSec();
-    if(end - begin >= 2.5f) {
+    if(end - begin >= 4.0f) {
         if(is_parked){
             parking_state = 5;
         }
-        parking_state = 1;
+        else {
+            parking_state = 1;
+        }
     }
     break;
 
     case 0 :
+    ld->isNotRequired = false;
     ld->operate();
     keep_lane(&control_msg);
+    printf("parking point 2 : %d\n", ld->parking_point2.y);
+    printf("parking point 1 : %d\n", ld->parking_point1.y);  
     if(!is_front_parking && ld->parking_point1.y > 0) {
+	printf("obstacle_size : %d\n", obstacle_size);
         for(int i = 0; i < obstacle_size; i++) {
+	    printf("lidar distance : %f\n", obstacleDistance(car, obstacles_data.circles[i].center));
             if(obstacles_data.circles[i].center.x > 0 && obstacleDistance(car, obstacles_data.circles[i].center) < PARKING_LIDAR_THRESHOLD) {
-                ld->parking_release();
+	
                 is_front_parking = true;
+		ld->parking_release();
 		printf("front parking\n");
                 parking_state = 6;
                 break;
             }
         }
     }
-    printf("stop_y : %f\n", ld->parking_point2.y);
-    //printf("stop_y : %f\n", ld->cross_y);
-    if(ld->parking_point2.y >= PARKING_STATE_0_THRESHOLD) {
-        parking_state = -1;
-	    ld->parking_state = 1;
-        begin = ros::Time::now().toSec();
+    else  {
+	if(ld->parking_point2.y >= PARKING_STATE_0_THRESHOLD) {
+		printf("parking point detect!!!!!\n");
+        	parking_state = -1;
+		ld->parking_state = 1;
+        	begin = ros::Time::now().toSec();
+	}
     }
     break;
 
     case 1 :
+    ld->isNotRequired = true;
     ld->operate();
     control_msg.steering = 200; // right max steer
     control_msg.throttle = 5;
@@ -374,6 +409,7 @@ void pk_operate() {
     break;
 
     case 2 :
+    ld->isNotRequired = false;
     ld->operate();
     keep_lane(&control_msg);
     if(ld->stop_parking.y >= PARKING_STATE_2_THRESHOLD) {
@@ -385,6 +421,8 @@ void pk_operate() {
     break;
 
     case 3 :
+    ld->isNotRequired = true;
+    ld->operate();
     control_msg.throttle = 0;
     control_msg.steering = 100;
     end = ros::Time::now().toSec();
@@ -394,8 +432,12 @@ void pk_operate() {
     break;
 
     case 4 :
+    ld->isNotRequired = false;
     ld->operate();
     keep_lane(&control_msg);
+    control_msg.steering -= 100;
+    control_msg.steering = -control_msg.steering;
+    control_msg.steering += 100;
     control_msg.throttle = -5;
     if(ld->stop_parking.y < PARKING_STATE_4_THRESHOLD) {
         parking_state = -1;
@@ -406,19 +448,27 @@ void pk_operate() {
     break;
 
     case 5 :
-    ld->parking_state = 2;    
+    ld->parking_state = 2;  
+    ld->isNotRequired = false;  
     ld->operate();
     if(!ld->is_left_error() && !ld->is_right_error()){
         return_msg.data = RETURN_FINISH;
         return_sig_pub.publish(return_msg);
+        control_msg.throttle = 0;
+        //변수　초기화
         ld->parking_release();
+        is_parked = false;
+        is_front_parking = false;
+        parking_state = 0;
     }
     break;
-
+ 
     case 6 :
+    ld->isNotRequired = false;
     ld->operate();
     keep_lane(&control_msg);
-    if(obstacle_size == 0) {
+
+    if(obstacle_size < 2) {
         ld->parking_init();
         parking_state = 0;
     }
@@ -456,7 +506,7 @@ void keep_lane_advanced(race::drive_values* control_msg) {
     op_error = cal_lookahead_op_error();
     //printf("lookahead : %f\n", op_error);
     speed = (int)round((float)speed - fabs(op_error * p_lookahead));
-    speed = min(max(speed, 5), MAX_SPEED);
+    speed = min(max(speed, MIN_SPEED), MAX_SPEED);
     printf("speed : %d\n", speed);
     control_msg->steering = steering;
     control_msg->throttle = speed;
@@ -486,9 +536,8 @@ float cal_lookahead_op_error() {
 }
 
 void keep_lane(race::drive_values* control_msg) {
-    int speed = MAX_SPEED / 2;
+    int speed = MISSION_SPEED;
     const int Xshift = 350;
-    const int Xspeed = 5;
     float op_error;
     Point op;
     Point pa_1 = ld->p1;
@@ -504,7 +553,6 @@ void keep_lane(race::drive_values* control_msg) {
       if(isRightObstacle == 1)
       {
           isRightStaticPass = true;
-          speed = Xspeed;
           pb_1.x -= Xshift;
           pb_2.x -= Xshift;
       }
@@ -512,7 +560,6 @@ void keep_lane(race::drive_values* control_msg) {
       if(isLeftObstacle == 1)
       {
           isLeftStaticPass = true;
-          speed = Xspeed;
           pa_1.x += Xshift;
           pa_2.x += Xshift;
       }
@@ -649,6 +696,13 @@ void so_operate(){
     if(so_cnt > STATIC_OBSTACLE_THRESHOLD){
       return_msg.data = RETURN_FINISH;
       return_sig_pub.publish(return_msg);
+      // 변수　초기화
+      static_obstacle_state = 0;
+      so_cnt = 0;
+      isLeftStaticPass = false;
+      isRightStaticPass = false;
+      isLeftObstacle = 0;
+      isLeftObstacle = 0;
     }
 
     if(minimumL == minimumR)

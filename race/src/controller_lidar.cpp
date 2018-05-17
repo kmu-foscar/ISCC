@@ -21,9 +21,9 @@ using namespace std;
 #define MAX 10 
 
 //hyepro K_L only 1.3 K_R 1.0
-#define K_L 1.4
-#define K_R 1.4
-#define OBSTACLE_THRESHOLD 150
+#define K_L 1.6
+#define K_R 1.6
+#define OBSTACLE_THRESHOLD 30
 
 ros::Publisher pub;
 ros::Publisher return_sig_pub;
@@ -190,7 +190,7 @@ void calculator(obstacle_detector::Obstacles data)
 
     if(!isdetected) // OA mode starting condition
     {
-        isdetected = data.circles.size() >= 5 ? true : false;
+        isdetected = data.circles.size() >= 10 ? true : false;
 	if(isdetected) {
 	    return_msg.data = RETURN_OPERATE;
             return_sig_pub.publish(return_msg);
@@ -228,6 +228,7 @@ void calculator(obstacle_detector::Obstacles data)
     if(isdetected && oa_cnt >= OBSTACLE_THRESHOLD) { // oa off
         return_msg.data = RETURN_FINISH;
         return_sig_pub.publish(return_msg);
+	isdetected = false;
     }
     //점을 찾으면 true 못찾으면 false
     //left point 0, left point2 1, right point 2, right point2 3
@@ -314,7 +315,6 @@ void calculator(obstacle_detector::Obstacles data)
     if(isdetected) {
     	pub.publish(msg);
 	printf("steering : %d speed : %d\n", msg.steering, msg.throttle);
-	isdetected = false;
     }
 }
 
@@ -324,7 +324,7 @@ int main(int argc,	 char* argv[])
 	ros::NodeHandle nh;
   oa_onoff_sub = nh.subscribe("oa_onoff", 1, oa_onoffCallback);
 	ros::Subscriber sub = nh.subscribe("raw_obstacles", 1, calculator);
-	pub = nh.advertise<race::drive_values> ("Control", 100);
+	pub = nh.advertise<race::drive_values> ("Control", 1000);
 	return_sig_pub = nh.advertise<std_msgs::Int16>("return_signal", 1);
 	ros::spin();
 }
