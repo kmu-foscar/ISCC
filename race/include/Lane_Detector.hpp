@@ -25,10 +25,8 @@ const Vec3b RGB_WHITE_LOWER = Vec3b(100, 100, 190);
 const Vec3b RGB_WHITE_UPPER = Vec3b(255, 255, 255);
 const Vec3b RGB_YELLOW_LOWER = Vec3b(225, 180, 0);
 const Vec3b RGB_YELLOW_UPPER = Vec3b(255, 255, 170);
-// const Vec3b HSV_YELLOW_LOWER = Vec3b(10, 20, 130);
-// const Vec3b HSV_YELLOW_UPPER = Vec3b(30, 140, 255);
-const Vec3b HSV_YELLOW_LOWER = Vec3b(10, 40, 100);
-const Vec3b HSV_YELLOW_UPPER = Vec3b(30, 220, 255);
+const Vec3b HSV_YELLOW_LOWER = Vec3b(10, 20, 130);
+const Vec3b HSV_YELLOW_UPPER = Vec3b(30, 140, 255);
 
 const Vec3b HLS_YELLOW_LOWER = Vec3b(20, 120, 80);
 const Vec3b HLS_YELLOW_UPPER = Vec3b(45, 200, 255);
@@ -78,8 +76,8 @@ protected:
 		mask, cannyImg1, cannyImg2, houghImg1, houghImg2, park_img;
 
 	int clusterCount;
-	sLine cluster[10];
-	int cluster_idx[10];
+	sLine cluster[20];
+	int cluster_idx[20];
 	bool parking_mode_onoff;
 	void base_ROI(Mat& img, Mat& img_ROI);
 	void v_roi(Mat& img, Mat& img_ROI, const Point& p1, const Point& p2);
@@ -213,22 +211,17 @@ void Lane_Detector::operate() {
 	GaussianBlur(originImg_left, filterImg1, Size(5, 5), 0);
 	GaussianBlur(originImg_right, filterImg2, Size(5, 5), 0);
 
-	// if (parking_mode_onoff && parking_state <= 1)
-	// {
-	// 	inRange(filterImg1, RGB_WHITE_LOWER, RGB_WHITE_UPPER, binaryImg1);
-	// }
-	// else
-	// {
-	// 	cvtColor(filterImg1, img_hsv, COLOR_BGR2HSV);
-	// 	inRange(img_hsv, HSV_YELLOW_LOWER, HSV_YELLOW_UPPER, binaryImg1);
-	// }
+	 if (parking_mode_onoff && parking_state <= 1)
+	 {
+	 	inRange(filterImg1, RGB_WHITE_LOWER, RGB_WHITE_UPPER, binaryImg1);
+	 }
+	 else
+	 {
+	 	cvtColor(filterImg1, img_hsv, COLOR_BGR2HSV);
+	 	inRange(img_hsv, HSV_YELLOW_LOWER, HSV_YELLOW_UPPER, binaryImg1);
+	 }
 
-	cvtColor(filterImg1, img_hsv1, COLOR_BGR2HSV);
-	cvtColor(filterImg2, img_hsv2, COLOR_BGR2HSV);
-
-
-	inRange(img_hsv1, HSV_YELLOW_LOWER, HSV_YELLOW_UPPER, binaryImg1);
-	inRange(img_hsv2, HSV_YELLOW_LOWER, HSV_YELLOW_UPPER, binaryImg2);
+	inRange(filterImg2, RGB_WHITE_LOWER, RGB_WHITE_UPPER, binaryImg2);
 
 	Canny(binaryImg1, cannyImg1, 130, 270);
 	Canny(binaryImg2, cannyImg2, 130, 270);
@@ -608,8 +601,8 @@ void Lane_Detector::hough_to_cluster()
 
 
 	GaussianBlur(park_roi, blur_park, Size(5, 5), 0);
-	cvtColor(blur_park, img_hsv, COLOR_BGR2HSV);
-	inRange(img_hsv, HSV_YELLOW_LOWER, HSV_YELLOW_UPPER, range_park);
+	//cvtColor(blur_park, img_hsv, COLOR_BGR2HSV);
+	inRange(blur_park, Scalar(180,100,100),Scalar(255,255,255), range_park);
 	imshow("range",range_park);
 	Canny(range_park, canny_park, 70, 200);
 	imshow("canny",canny_park);
@@ -618,7 +611,7 @@ void Lane_Detector::hough_to_cluster()
 	vector<Vec2f> lines_out_park;
 	vector<Vec2f> different_rho;
 	memset(cluster_idx, 0, sizeof(cluster_idx));
-	for (int i = 0; i < 10; i++)
+	for (int i = 0; i < 20; i++)
 	{
 		cluster[i].sx = 0;
 		cluster[i].sy = 0;
@@ -689,7 +682,7 @@ void Lane_Detector::hough_to_cluster()
 			}
 		}
 
-		cout << "cluster = " << clusterCount << endl;
+		//cout << "cluster = " << clusterCount << endl;
 	}
 }
 
