@@ -45,7 +45,7 @@ struct sLine
 	double ex, ey;
 
 	sLine() : sx(0), sy(0), ex(0), ey(0) { }
-	sLine(int sx_, int sy_, int ex_, int ey_)
+	sLine(double sx_, double sy_, double ex_, double ey_)
 		: sx(sx_), sy(sy_), ex(ex_), ey(ey_)
 	{
 
@@ -78,8 +78,8 @@ protected:
 		mask, cannyImg1, cannyImg2, houghImg1, houghImg2, park_img;
 
 	int clusterCount;
-	sLine cluster[6];
-	int cluster_idx[6];
+	sLine cluster[10];
+	int cluster_idx[10];
 	bool parking_mode_onoff;
 	void base_ROI(Mat& img, Mat& img_ROI);
 	void v_roi(Mat& img, Mat& img_ROI, const Point& p1, const Point& p2);
@@ -190,11 +190,11 @@ void Lane_Detector::init() {
 void Lane_Detector::operate() {
 	capture_left >> input_left;
 	capture_right >> input_right;
-
-	capture_park >> park_img;
-	flip(park_img, park_img, 1);
-	flip(park_img, park_img, 0);
-
+	if(parking_mode_onoff) {
+		capture_park >> park_img;
+		flip(park_img, park_img, 1);
+		flip(park_img, park_img, 0);
+	}
 	resize(input_left, originImg_left, Size(640, 480), 0, 0, CV_INTER_LINEAR);
 	resize(input_right, originImg_right, Size(640, 480), 0, 0, CV_INTER_LINEAR);
 	if (originImg_left.empty()) {
@@ -609,13 +609,16 @@ void Lane_Detector::hough_to_cluster()
 
 	GaussianBlur(park_roi, blur_park, Size(5, 5), 0);
 	cvtColor(blur_park, img_hsv, COLOR_BGR2HSV);
-	inRange(img_hsv, HSV_YELLOW_LOWER, HSV_YELLOW_UPPER, canny_park);
+	inRange(img_hsv, HSV_YELLOW_LOWER, HSV_YELLOW_UPPER, range_park);
+	imshow("range",range_park);
+	Canny(range_park, canny_park, 70, 200);
+	imshow("canny",canny_park);
 	clusterCount = 0;
 	int h_threshold = 60;
 	vector<Vec2f> lines_out_park;
 	vector<Vec2f> different_rho;
 	memset(cluster_idx, 0, sizeof(cluster_idx));
-	for (int i = 0; i < 6; i++)
+	for (int i = 0; i < 10; i++)
 	{
 		cluster[i].sx = 0;
 		cluster[i].sy = 0;
@@ -660,7 +663,7 @@ void Lane_Detector::hough_to_cluster()
 			{
 				for (int k = 0; k < different_rho.size(); k++)
 				{
-					if (abs(different_rho[k][0] - deg) <= 7 && (different_rho[k][1] - rho)<80 || (abs(different_rho[k][0] - deg)>7 && abs(different_rho[k][0] - deg) <= 10) && abs(different_rho[k][1] - rho)<50)// �ι�° ���� ���� 35
+					if (abs(different_rho[k][0] - deg) <= 7 && (different_rho[k][1] - rho)<80 || (abs(different_rho[k][0] - deg)>7 && abs(different_rho[k][0] - deg) <= 25) && abs(different_rho[k][1] - rho)<50)// �ι�° ���� ���� 35
 					{
 						cluster[k].sx += x1_;
 						cluster[k].ex += x2_;
@@ -686,7 +689,7 @@ void Lane_Detector::hough_to_cluster()
 			}
 		}
 
-		//cout << "cluster = " << clusterCount << endl;
+		cout << "cluster = " << clusterCount << endl;
 	}
 }
 
@@ -700,7 +703,7 @@ void Lane_Detector::get_crosspoint()
 
 	for (int p = 0; p < clusterCount; p++)
 	{
-
+		
 		cluster[p].sx = (double)cluster[p].sx / cluster_idx[p];
 		cluster[p].sy = (double)cluster[p].sy / cluster_idx[p];
 		cluster[p].ex = (double)cluster[p].ex / cluster_idx[p];
@@ -714,11 +717,13 @@ void Lane_Detector::get_crosspoint()
 		{
 			if (parking_state == 0 && cluster[p].sx < minus)
 			{
+			
 				minus = cluster[p].sx;
 				minus_idx = p;
 			}
 			else if (parking_state == 1 && cluster[p].sx > minus_)
 			{
+				
 				minus_ = cluster[p].sx;
 				minus_idx = p;
 			}
@@ -742,7 +747,7 @@ void Lane_Detector::get_crosspoint()
 
 		double deg1, deg2;
 		deg1 = (double)(cluster[0].ey - cluster[0].sy) / (cluster[0].ex - cluster[0].sx);
-  	deg2 = (double)(cluster[1].ey - cluster[1].sy) / (cluster[1].ex - cluster[1].sx);
+  		deg2 = (double)(cluster[1].ey - cluster[1].sy) / (cluster[1].ex - cluster[1].sx);
 
 
 
@@ -754,7 +759,7 @@ void Lane_Detector::get_crosspoint()
 		cross_x = (double)(d - b) / (a - c);
 		cross_y = (double)(a* cross_x) + b;
 
-		if (deg1*deg2 > 0 && abs(deg1 - deg2) < 0.4) return;
+		//if (deg1*deg2 > 0 && abs(deg1 - deg2) < 0.4) return;
 
 		//cout << "cross = " << cross_x << " " << cross_y << endl;
 
@@ -792,7 +797,7 @@ void Lane_Detector::get_crosspoint()
 			parking_point1.x = cross_x;
 			parking_point1.y = cross_y;
 		}
-		else if (parking_position == 1 &&  abs(parking_point1.y - cross_y)<10)
+		else if (parking_position == 1 &&  abs(parking_point1.y - cross_y)<60)
 		{
 			parking_point1.x = cross_x;
 			parking_point1.y = cross_y;
@@ -800,8 +805,17 @@ void Lane_Detector::get_crosspoint()
 		else
 		{
 			if (parking_position == 1) parking_position = 2;
-			parking_point2.x = cross_x;
-			parking_point2.y = cross_y;
+			if (parking_point2.y == 0)
+			{
+				parking_point2.x = cross_x;
+				parking_point2.y = cross_y;				
+			}
+			else if (abs(parking_point2.y - cross_y)<=60) 
+			{
+				parking_point2.x = cross_x;
+				parking_point2.y = cross_y;
+			}
+				
 
 		}
 
@@ -815,7 +829,7 @@ void Lane_Detector::get_crosspoint()
 }
 
 void Lane_Detector::parking_init() {
-	capture_park.open(0);
+	capture_park.open(1);
 	parking_mode_onoff = true;
 	parking_point1.x = 0;
 	parking_point1.y = 0;
