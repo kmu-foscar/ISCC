@@ -88,13 +88,16 @@ protected:
 	float get_slope(const Point& p1, const Point& p2);
 	int position(const Point P1, const Point P2);
 	void hough_to_cluster();
+	void detect_parking_line();
 
 public:
 	Point p1, p2, p3, p4;
-	int parking_position;
 	int parking_state;
 	bool uturn_mode_onoff;
-	Point parking_point1, parking_point2, stop_parking;
+	bool isNotRequired = false;
+	Point stop_parking;
+	int p1_x1, p1_x2, p1_y1, p1_y2;
+	int p2_x1, p2_x2, p2_y1, p2_y2;
 	int stop_y;
 	Mat originImg_left;
 	Mat originImg_right;
@@ -187,8 +190,11 @@ void Lane_Detector::operate() {
 	capture_left >> input_left;
 	capture_right >> input_right;
 
-	capture_park >> park_img;
-
+	if (parking_mode_onoff) {
+		capture_park >> park_img;
+		flip(park_img, park_img, 1);
+		flip(park_img, park_img, 0);
+	}
 	resize(input_left, originImg_left, Size(640, 480), 0, 0, CV_INTER_LINEAR);
 	resize(input_right, originImg_right, Size(640, 480), 0, 0, CV_INTER_LINEAR);
 	if (originImg_left.empty()) {
@@ -200,6 +206,10 @@ void Lane_Detector::operate() {
 		cerr << "Empty right Image" << endl;
 		return;
 	}
+
+	if (isNotRequired == true)
+		return;
+
 
 	GaussianBlur(originImg_left, filterImg1, Size(5, 5), 0);
 	GaussianBlur(originImg_right, filterImg2, Size(5, 5), 0);
@@ -213,6 +223,8 @@ void Lane_Detector::operate() {
 		cvtColor(filterImg1, img_hsv, COLOR_BGR2HSV);
 		inRange(img_hsv, HSV_YELLOW_LOWER, HSV_YELLOW_UPPER, binaryImg1);
 	}
+
+	inRange(filterImg2, RGB_WHITE_LOWER, RGB_WHITE_UPPER, binaryImg2);
 
 	Canny(binaryImg1, cannyImg1, 130, 270);
 
@@ -229,10 +241,10 @@ void Lane_Detector::operate() {
 	if (!left_error) {
 		v_roi(cannyImg1, initROI1, p1, p2);
 	}
-	else if(left_error && left_error_count != 0){
+	else if (left_error && left_error_count != 0) {
 		base_ROI(cannyImg1, initROI1);
 	}
-	else{
+	else {
 		region_of_interest_L(cannyImg1, initROI1);
 		left_error_count++;
 	}
@@ -240,7 +252,7 @@ void Lane_Detector::operate() {
 	if (!right_error) {
 		v_roi(cannyImg2, initROI2, p4, p3);
 	}
-	else if(right_error && right_error_count != 0){
+	else if (right_error && right_error_count != 0) {
 		base_ROI(cannyImg2, initROI2);
 	}
 	else {
@@ -269,8 +281,15 @@ void Lane_Detector::operate() {
 	hconcat(a, b, c);
 
 	if (parking_mode_onoff) {
-		hough_to_cluster();
-		get_crosspoint();
+		if (parking_state == 0)
+		{
+			detect_parking_line();
+		}
+		else if (parking_state == 1)
+		{
+			hough_to_cluster();
+			get_crosspoint();
+		}
 	}
 
 #ifdef DEBUG
@@ -589,15 +608,15 @@ void Lane_Detector::hough_to_cluster()
 	Mat blur_park, range_park, canny_park;
 
 
-	if (parking_state == 1) park_roi = input_right;
-	else park_roi = park_img(Rect(0, park_img.rows / 2, park_img.cols, park_img.rows / 2));
+	park_roi = input_right;
 
 
 	GaussianBlur(park_roi, blur_park, Size(5, 5), 0);
+	//cvtColor(blur_park, img_hsv, COLOR_BGR2HSV);
 	inRange(blur_park, Scalar(180, 100, 100), Scalar(255, 255, 255), range_park);
-	imshow("range_park", range_park);
+	//imshow("range",range_park);
 	Canny(range_park, canny_park, 70, 200);
-	imshow("canny_park", canny_park);
+	//imshow("canny",canny_park);
 	clusterCount = 0;
 	int h_threshold = 80;
 	vector<Vec2f> lines_out_park;
@@ -700,12 +719,7 @@ void Lane_Detector::get_crosspoint()
 
 		if ((double)(cluster[p].ey - cluster[p].sy) / (cluster[p].ex - cluster[p].sx) < 0)
 		{
-			if (parking_state == 0 && cluster[p].sx < minus)
-			{
-				minus = cluster[p].sx;
-				minus_idx = p;
-			}
-			else if (parking_state == 1 && cluster[p].sx > minus_)
+			if (cluster[p].sx > minus_)
 			{
 				minus_ = cluster[p].sx;
 				minus_idx = p;
@@ -721,12 +735,18 @@ void Lane_Detector::get_crosspoint()
 		}
 
 
-		line(park_roi, Point(cluster[p].sx, cluster[p].sy), Point(cluster[p].ex, cluster[p].ey), Scalar(255, 0, 0), 3, LINE_AA);
+		//line(park_roi, Point(cluster[p].sx, cluster[p].sy), Point(cluster[p].ex, cluster[p].ey), Scalar(255, 0, 0), 3, LINE_AA);
 	}
 
 
 	if (clusterCount == 2)
 	{
+
+		double deg1, deg2;
+		deg1 = (double)(cluster[0].ey - cluster[0].sy) / (cluster[0].ex - cluster[0].sx);
+		deg2 = (double)(cluster[1].ey - cluster[1].sy) / (cluster[1].ex - cluster[1].sx);
+
+
 		a = (double)(cluster[0].ey - cluster[0].sy) / (cluster[0].ex - cluster[0].sx);
 		b = (double)cluster[0].ey - (a* cluster[0].ex);
 		c = (double)(cluster[1].ey - cluster[1].sy) / (cluster[1].ex - cluster[1].sx);
@@ -736,6 +756,8 @@ void Lane_Detector::get_crosspoint()
 		cross_y = (double)(a* cross_x) + b;
 
 		//cout << "cross = " << cross_x << " " << cross_y << endl;
+
+		if (abs(deg1 - deg2) < 0.4) return;
 
 		circle(park_roi, Point2f(cross_x, cross_y), 5, Scalar(0, 255, 0), 3, 8);
 	}
@@ -758,49 +780,20 @@ void Lane_Detector::get_crosspoint()
 
 	if (clusterCount >= 2)
 	{
-		if (parking_state == 1)
-		{
-			stop_parking.x = cross_x;
-			stop_parking.y = cross_y;
-		}
-		else if (parking_point1.x == 0 && parking_point1.y == 0)
-		{
-			parking_position = 1;
-			parking_point1.x = cross_x;
-			parking_point1.y = cross_y;
-		}
-		else if (parking_position == 1 && abs(parking_point1.x - cross_x) < 10 && abs(parking_point1.y - cross_y)<10)
-		{
-			parking_point1.x = cross_x;
-			parking_point1.y = cross_y;
-		}
-		else
-		{
-			if (parking_position == 1) parking_position = 2;
-			parking_point2.x = cross_x;
-			parking_point2.y = cross_y;
-
-		}
-
-
-		//if (parking_position == 1) cout << "position , x, y = " << parking_position << " " << parking_point1.x << " " << parking_point1.y << endl;
-		//else if (parking_position == 2) cout << "position , x, y = " << parking_position << " " << parking_point2.x << " " << parking_point2.y << endl;
-		//-> \C0Ӱ\E8 \B0\AA 63 ~68
+		stop_parking.x = cross_x;
+		stop_parking.y = cross_y;
 
 	}
-	imshow("parking",park_roi);
+	imshow("parking", park_roi);
 }
 
 void Lane_Detector::parking_init() {
 	capture_park.open(3);
 	parking_mode_onoff = true;
-	parking_point1.x = 0;
-	parking_point1.y = 0;
-	parking_point2.x = 0;
-	parking_point2.y = 0;
+	p1_y1 = 0;
+	p2_y1 = 0;
 	stop_parking.x = 0;
 	stop_parking.y = 0;
-	parking_position = 0;
 	parking_state = 0;
 	clusterCount = 0;
 	memset(cluster_idx, 0, sizeof(cluster_idx));
@@ -813,12 +806,92 @@ void Lane_Detector::parking_release() {
 
 }
 
+void Lane_Detector::detect_parking_line()
+{
+	//p1_y1이랑 p2_y1 으로 판단, parking_point1,2 삭제 함, 나머지 state 바뀌는거 다시 확인할 것
+
+	Mat p_roi, p_blur, range_p, canny_p;
+
+	p_roi = park_img(Rect(0, park_img.rows / 2, park_img.cols, park_img.rows / 2));
+
+	GaussianBlur(p_roi, p_blur, Size(5, 5), 0);
+	inRange(p_blur, Scalar(180, 100, 100), Scalar(255, 255, 255), range_p);
+	Canny(range_p, canny_p, 70, 200);
+
+	int threshold = 60;
+	vector<Vec2f> linesL;
+	int Lstop_x1, Lstop_x2, Lstop_y1 = 0, Lstop_y2 = 0;
+
+	HoughLines(edge, linesL, 1, CV_PI / 180, threshold, 0, 0, 0, CV_PI / 2);
+
+	if (linesL.size() != 0)
+	{
+		for (int i = 0; i < linesL.size(); i++)
+		{
+			float rho = linesL[i][0];
+			float theta = linesL[i][1];
+			double a = cos(theta), b = sin(theta);
+			double x0 = a * rho, y0 = b * rho;
+			int x1_ = int(x0 + 1000 * (-b));
+			int y1_ = int(y0 + 1000 * (a));
+			int x2_ = int(x0 - 1000 * (-b));
+			int y2_ = int(y0 - 1000 * (a));
+
+			if (Lstop_y1 < y1_)
+			{
+				Lstop_x1 = x1_;
+				Lstop_y1 = y1_;
+				Lstop_x2 = x2_;
+				Lstop_y2 = y2_;
+
+			}
+		}
+
+		if (p1_y1 == 0)
+		{
+			p1_x1 = Lstop_x1;
+			p1_y1 = Lstop_y1;
+			p1_x2 = Lstop_x2;
+			p1_y2 = Lstop_y2;
+			line(p_roi, Point(p1_x1, p1_y1), Point(p1_x2, p1_y2), Scalar(0, 0, 255), 3, LINE_AA);
+		}
+		else if (p2_y1 != 0)
+		{
+			p2_x1 = Lstop_x1;
+			p2_y1 = Lstop_y1;
+			p2_x2 = Lstop_x2;
+			p2_y2 = Lstop_y2;
+			line(p_roi, Point(p2_x1, p2_y1), Point(p2_x2, p2_y2), Scalar(0, 0, 255), 3, LINE_AA);
+		}
+		else if (p2_y1 == 0 && abs(p1_y1 - Lstop_y1) <= 60)
+		{
+			p1_x1 = Lstop_x1;
+			p1_y1 = Lstop_y1;
+			p1_x2 = Lstop_x2;
+			p1_y2 = Lstop_y2;
+			line(p_roi, Point(p1_x1, p1_y1), Point(p1_x2, p1_y2), Scalar(0, 0, 255), 3, LINE_AA);
+		}
+		else if (p2_y1 == 0 && abs(p1_y1 - Lstop_y1) >60 && Lstop_y1 != 0)
+		{
+			p2_x1 = Lstop_x1;
+			p2_y1 = Lstop_y1;
+			p2_x2 = Lstop_x2;
+			p2_y2 = Lstop_y2;
+			line(p_roi, Point(p2_x1, p2_y1), Point(p2_x2, p2_y2), Scalar(0, 0, 255), 3, LINE_AA);
+		}
+	}
+
+	imshow("parking_line", p_roi);
+}
+
+
+
 void Lane_Detector::stop_line()
 {
 	Mat canny_stop, range_stop, stop_img, roi_stop;
 	int threshold = 80;
 	vector<Vec2f> linesL;
-	int Lstop_x1, Lstop_x2, Lstop_y1, Lstop_y2 = 0;
+	int Lstop_x1, Lstop_x2, Lstop_y1 = 0, Lstop_y2 = 0;
 
 	stop_img = input_left;
 
@@ -886,6 +959,11 @@ void Lane_Detector::stop_line()
 	if (uturn_mode_onoff) stop_y = Lstop_y1;
 	else stop_y = Lstop_y2;
 
+	if (uturn_mode_onoff) {
+		line(stop_img, Point(Lstop_x1, Lstop_y1), Point(Lstop_x2, Lstop_y2), Scalar(0, 0, 255), 3, LINE_AA);
+		imshow("stop", range_stop);
+		imshow("uturn", stop_img);
+	}
 
 }
 

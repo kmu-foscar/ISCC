@@ -14,7 +14,7 @@ using namespace std;
 //장애물 인식범위
 #define O_LIMIT 2
 //장애물간 거리
-#define O_B_LIMIT 0.8
+#define O_B_LIMIT 1.0
 #define O_B_LIMIT_POW O_B_LIMIT * O_B_LIMIT
 #define O_LIMIT_POW O_LIMIT * O_LIMIT
 #define PI 3.141592
