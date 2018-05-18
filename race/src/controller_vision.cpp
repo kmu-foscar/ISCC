@@ -12,7 +12,7 @@
 
 #define CENTER_POINT 640
 #define CENTER_POINT_LA 690
-#define MAX_SPEED 12
+#define MAX_SPEED 9
 #define MIN_SPEED 7
 #define MISSION_SPEED 5
 #define PARKING_STATE_0_THRESHOLD 30.f
@@ -50,7 +50,7 @@ obstacle_detector::Obstacles obstacles_data;
 double begin, end;
 // variables for lane keeper
 float p_steering = -0.3f;
-float p_steering_curve = 20.f;
+float p_steering_curve = 40.f;
 float p_lookahead_curve = 10.f;
 float p_lookahead = 0.05f;
 
@@ -122,7 +122,7 @@ int main(int argc, char** argv) {
     while(ros::ok()) {
         if(lk_onoff) {
             printf("lane_keeping_mode\n");
-	    ld->isNotRequired = false;
+	        ld->isNotRequired = false;
             ld->operate();
             la->operate(ld->originImg_left, ld->originImg_right);
             keep_lane_advanced(&control_msg);
@@ -491,13 +491,13 @@ void keep_lane_advanced(race::drive_values* control_msg) {
 
     if(ld->get_intersectpoint(pa_1, pa_2, pb_1, pb_2, &op)) {
         float error_steering = CENTER_POINT - op.x;
-        steering = p_steering * error_steering * (float)(1/(float)speed) * 5;
+        steering = p_steering * error_steering * (float)(1/(float)speed) * 8;
     }
     else if(ld->is_left_error()) {
-        steering = -p_steering_curve / ld->get_right_slope() * (float)(1/(float)speed) * 5;
+        steering = -p_steering_curve / ld->get_right_slope() * (float)(1/(float)speed) * 8;
     }
     else if(ld->is_right_error()) {
-        steering = p_steering_curve / ld->get_left_slope() * (float)(1/(float)speed) * 5;
+        steering = p_steering_curve / ld->get_left_slope() * (float)(1/(float)speed) * 8;
     }
 
     steering = min(max(steering, -100), 100);
@@ -567,13 +567,13 @@ void keep_lane(race::drive_values* control_msg) {
 
     if(ld->get_intersectpoint(pa_1, pa_2, pb_1, pb_2, &op)) {
         float error_steering = CENTER_POINT - op.x;
-        steering = p_steering * error_steering * (float)(1/(float)speed) * 5;
+        steering = p_steering * error_steering * (float)(1/(float)speed) * 8;
     }
     else if(ld->is_left_error()) {
-        steering = -p_steering_curve / ld->get_right_slope() * (float)(1/(float)speed) * 5;
+        steering = -p_steering_curve / ld->get_right_slope() * (float)(1/(float)speed) * 8;
     }
     else if(ld->is_right_error()) {
-        steering = p_steering_curve / ld->get_left_slope() * (float)(1/(float)speed) * 5;
+        steering = p_steering_curve / ld->get_left_slope() * (float)(1/(float)speed) * 8;
     }
 
     steering = min(max(steering, -100), 100);
