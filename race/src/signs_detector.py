@@ -15,8 +15,22 @@ from std_msgs.msg import Int16
 sc_onoff = True
 prev_onoff = True
 
+blue_count = 0
+red_count = 0
+
 labels = ['no sign', 'crosswalk', 'static obstacle', 'dynamic obstacle', 'branch road', 'curve', 'uturn', 'parking']
 buff = ["", "", "", "", "", "", "", "", "", "", "", "", "", "", ""]
+sign_check = [0, 0, 0, 0, 0, 0, 0, 0]
+sign_order = ['crosswalk', 'branch road', 'dynamic obstacle', 'static obstacle', 'curve', 'uturn', 'parking']
+
+# no sign = 0
+# crosswalk = 1
+# static obstacle = 2
+# dynamic obstacle = 3
+# branch road = 4
+# curve = 5
+# uturn = 6
+# parking = 7
 
 cam = cv2.VideoCapture()
 cnt = 0
@@ -114,7 +128,35 @@ def talker(classification) :
 		rospy.loginfo(classification)
 		ret = labels.index(classification)
 		if(ret != 0) :
-			pub.publish(ret)
+			if blue_count == 1 and red_count == 0 :
+				pub.publish(1) #crosswalk
+			
+			elif blue_count == 1 and red_count == 1 :
+				pub.publish(4) #branch road
+
+			elif blue_count == 1 and red_count == 2 :
+				pub.publish(3) #dynamic obstacle
+
+			elif blue_count == 1 and red_count == 3 :
+				pub_publish(2) #static obstacle
+
+			elif blue_count == 1 and red_count == 4 :
+				pub_publish(5) #curve
+
+			elif blue_count == 2 and red_count < 4 :
+				blue_count = blue_count - 1 #ignore blue between crosswalk and uturn
+			
+			elif blue_count == 2 and red_count == 4 :
+				pub_publish(6) #uturn
+
+			elif blue_count == 2 and red_count > 4 :
+				red_count = red_count - 1 #ignore red between uturn and parking
+			
+			elif blue_count == 3 and red_count == 4 :
+				pub_publish(7) #parking
+
+				
+			# pub.publish(ret)
 
 def sc_onoffCallback(data) :
 	global prev_onoff, sc_onoff, cam
@@ -123,7 +165,7 @@ def sc_onoffCallback(data) :
 		prev_onoff = sc_onoff
 		if(sc_onoff) :
 			print("SC ON")
-			cam.open(0)
+			cam.open(1)
 		else :
 			print("SC OFF")
 			cam.release()
@@ -174,7 +216,7 @@ if __name__ == '__main__' :
 			if img_crop is None :
 				img_crop = img
 			else :
-            	img_crop = cv2.resize(img_crop, (229, 229), interpolation=cv2.INTER_CUBIC)
+				img_crop = cv2.resize(img_crop, (229, 229), interpolation=cv2.INTER_CUBIC)
 			cv2.imshow("ROI", img_crop)
 
 			if ret_val:
@@ -200,17 +242,23 @@ if __name__ == '__main__' :
 						prediction = human_string
 						max_score = score  
 
-				if not prediction == 'no sign' and max_score > 0.5 :
+				if not prediction == 'no sign' and max_score > 0.6 :
 					buff[step % 15] = prediction 
 					step = step + 1
 
 				count = 0
 				for i in range(0, 15) :
 					if buff[i] == prediction :
-					count = count + 1	
+						count = count + 1	
 
-				if count >= 10 :
+				if count >= 12 :
 					print('%s (score = %.5f)' % (prediction, max_score))
+					if prediction == 'branch road' or prediction == 'dynamic obstacle' or prediction == 'static obstacle' or prediction == 'curve' :
+						red_count = red_count + 1
+
+					if prediction == 'crosswalk' or prediction == 'uturn' or prediction == 'parking' :
+						blue_count = blue_count + 1
+
 					talker(prediction)
 					for i in range(0, 15) :
 						buff[i] = ""
