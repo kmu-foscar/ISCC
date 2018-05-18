@@ -14,7 +14,7 @@ using namespace std;
 //장애물 인식범위
 #define O_LIMIT 2
 //장애물간 거리
-#define O_B_LIMIT 0.8
+#define O_B_LIMIT 1.1
 #define O_B_LIMIT_POW O_B_LIMIT * O_B_LIMIT
 #define O_LIMIT_POW O_LIMIT * O_LIMIT
 #define PI 3.141592
@@ -237,24 +237,9 @@ void calculator(obstacle_detector::Obstacles data)
 
     double steering, RFlag, LFlag;
 
-	//좌우 첫번째 점이 모두 검출되지 않으면
-    if(!find[0] && !find[2])
-    {
-	msg.steering = 100;
-	msg.throttle = 5;
-        pub.publish(msg);
-	return;
-    }
-
-    else if(!find[2]&&!find[3])
-    {
-	msg.steering = 200;
-	pub.publish(msg);
-	return;
-    }
 
     //좌우 첫번째 장애물만 검출 시
-    if(!find[1] && !find[3])
+    if(!find[1] || !find[3])
     {
         geometry_msgs::Point p;
         p.x = (pl1.x + pr1.x) / 2;
@@ -309,7 +294,8 @@ void calculator(obstacle_detector::Obstacles data)
 	msg.steering = 0;
     else if(msg.steering > 200)
 	msg.steering = 200;
-    msg.throttle = 5;
+    msg.steering -= 6;   
+    msg.throttle = 7;
     
     //printf("steering : %d speed : %d\n", msg.steering, 1);
     if(isdetected) {
