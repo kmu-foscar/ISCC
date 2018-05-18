@@ -25,8 +25,8 @@ const Vec3b RGB_WHITE_LOWER = Vec3b(100, 100, 190);
 const Vec3b RGB_WHITE_UPPER = Vec3b(255, 255, 255);
 const Vec3b RGB_YELLOW_LOWER = Vec3b(225, 180, 0);
 const Vec3b RGB_YELLOW_UPPER = Vec3b(255, 255, 170);
-const Vec3b HSV_YELLOW_LOWER = Vec3b(10, 20, 130);
-const Vec3b HSV_YELLOW_UPPER = Vec3b(30, 140, 255);
+const Vec3b HSV_YELLOW_LOWER = Vec3b(20, 20, 130);
+const Vec3b HSV_YELLOW_UPPER = Vec3b(40, 140, 255);
 
 const Vec3b HLS_YELLOW_LOWER = Vec3b(20, 120, 80);
 const Vec3b HLS_YELLOW_UPPER = Vec3b(45, 200, 255);
@@ -856,14 +856,14 @@ void Lane_Detector::stop_line()
 	{
 		GaussianBlur(stop_img, roi_stop, Size(5, 5), 0);
 		cvtColor(roi_stop, roi_stop, COLOR_BGR2HSV);
-		inRange(img_hsv, Scalar(20, 40, 130), Scalar(40, 160, 255), range_stop);
+		inRange(img_hsv, Scalar(20, 20, 130), Scalar(40, 140, 255), range_stop);
 		Canny(range_stop, canny_stop, 70, 200);
 		HoughLines(canny_stop, linesL, 1, CV_PI / 180, threshold, 0, 0, 0, CV_PI / 2);
 	}
 	else
 	{
 		GaussianBlur(stop_img, roi_stop, Size(5, 5), 0);
-		inRange(roi_stop, Scalar(180, 100, 100), Scalar(255, 255, 255), range_stop);
+		inRange(roi_stop, Scalar(190, 100, 100), Scalar(255, 255, 255), range_stop);
 		Canny(range_stop, canny_stop, 70, 200);
 		HoughLines(canny_stop, linesL, 1, CV_PI / 180, threshold, 0, 0, CV_PI / 2, CV_PI);
 	}
