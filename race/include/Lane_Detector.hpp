@@ -25,8 +25,8 @@ const Vec3b RGB_WHITE_LOWER = Vec3b(100, 100, 190);
 const Vec3b RGB_WHITE_UPPER = Vec3b(255, 255, 255);
 const Vec3b RGB_YELLOW_LOWER = Vec3b(225, 180, 0);
 const Vec3b RGB_YELLOW_UPPER = Vec3b(255, 255, 170);
-const Vec3b HSV_YELLOW_LOWER = Vec3b(10, 20, 130);
-const Vec3b HSV_YELLOW_UPPER = Vec3b(30, 140, 255);
+const Vec3b HSV_YELLOW_LOWER = Vec3b(20, 20, 130);
+const Vec3b HSV_YELLOW_UPPER = Vec3b(40, 140, 255);
 
 const Vec3b HLS_YELLOW_LOWER = Vec3b(20, 120, 80);
 const Vec3b HLS_YELLOW_UPPER = Vec3b(45, 200, 255);
@@ -43,7 +43,7 @@ struct sLine
 	double ex, ey;
 
 	sLine() : sx(0), sy(0), ex(0), ey(0) { }
-	sLine(int sx_, int sy_, int ex_, int ey_)
+	sLine(double sx_, double sy_, double ex_, double ey_)
 		: sx(sx_), sy(sy_), ex(ex_), ey(ey_)
 	{
 
@@ -72,12 +72,12 @@ protected:
 	int left_error_count;
 	int right_error_count;
 
-	Mat img_hsv, filterImg1, filterImg2, binaryImg1, binaryImg2, initROI1, initROI2,
+	Mat img_hsv, img_hsv1, img_hsv2, filterImg1, filterImg2, binaryImg1, binaryImg2, initROI1, initROI2,
 		mask, cannyImg1, cannyImg2, houghImg1, houghImg2, park_img;
 
 	int clusterCount;
-	sLine cluster[6];
-	int cluster_idx[6];
+	sLine cluster[20];
+	int cluster_idx[20];
 	bool parking_mode_onoff;
 	void base_ROI(Mat& img, Mat& img_ROI);
 	void v_roi(Mat& img, Mat& img_ROI, const Point& p1, const Point& p2);
@@ -160,7 +160,7 @@ float Lane_Detector::get_right_slope() {
 }
 
 void Lane_Detector::init() {
-	string path = "/home/nvidia/ISCC_Videos/";
+	string path = "/home/foscar/ISCC_Videos/";
 	struct tm* datetime;
 	time_t t;
 	t = time(NULL);
@@ -184,6 +184,7 @@ void Lane_Detector::init() {
 	parking_mode_onoff = false;
 	left_error_count = 0;
 	right_error_count = 0;
+	uturn_mode_onoff = false;
 }
 
 void Lane_Detector::operate() {
@@ -227,8 +228,6 @@ void Lane_Detector::operate() {
 	inRange(filterImg2, RGB_WHITE_LOWER, RGB_WHITE_UPPER, binaryImg2);
 
 	Canny(binaryImg1, cannyImg1, 130, 270);
-
-	inRange(filterImg2, RGB_WHITE_LOWER, RGB_WHITE_UPPER, binaryImg2);
 	Canny(binaryImg2, cannyImg2, 130, 270);
 
 	// Mat initROI1;
@@ -618,11 +617,11 @@ void Lane_Detector::hough_to_cluster()
 	Canny(range_park, canny_park, 70, 200);
 	//imshow("canny",canny_park);
 	clusterCount = 0;
-	int h_threshold = 80;
+	int h_threshold = 60;
 	vector<Vec2f> lines_out_park;
 	vector<Vec2f> different_rho;
 	memset(cluster_idx, 0, sizeof(cluster_idx));
-	for (int i = 0; i < 6; i++)
+	for (int i = 0; i < 20; i++)
 	{
 		cluster[i].sx = 0;
 		cluster[i].sy = 0;
@@ -667,7 +666,7 @@ void Lane_Detector::hough_to_cluster()
 			{
 				for (int k = 0; k < different_rho.size(); k++)
 				{
-					if (abs(different_rho[k][0] - deg) <= 5 && (different_rho[k][1] - rho)<55 || (abs(different_rho[k][0] - deg)>5 && abs(different_rho[k][0] - deg) <= 10) && abs(different_rho[k][1] - rho)<50)// \B5ι\F8° \C1\B6\B0\C7 \BF\F8\B7\A1 35
+					if (abs(different_rho[k][0] - deg) <= 7 && (different_rho[k][1] - rho)<80 || (abs(different_rho[k][0] - deg)>7 && abs(different_rho[k][0] - deg) <= 25) && abs(different_rho[k][1] - rho)<50)// �ι�° ���� ���� 35
 					{
 						cluster[k].sx += x1_;
 						cluster[k].ex += x2_;
@@ -707,7 +706,7 @@ void Lane_Detector::get_crosspoint()
 
 	for (int p = 0; p < clusterCount; p++)
 	{
-
+		
 		cluster[p].sx = (double)cluster[p].sx / cluster_idx[p];
 		cluster[p].sy = (double)cluster[p].sy / cluster_idx[p];
 		cluster[p].ex = (double)cluster[p].ex / cluster_idx[p];
@@ -721,6 +720,7 @@ void Lane_Detector::get_crosspoint()
 		{
 			if (cluster[p].sx > minus_)
 			{
+				
 				minus_ = cluster[p].sx;
 				minus_idx = p;
 			}
@@ -755,8 +755,9 @@ void Lane_Detector::get_crosspoint()
 		cross_x = (double)(d - b) / (a - c);
 		cross_y = (double)(a* cross_x) + b;
 
-		//cout << "cross = " << cross_x << " " << cross_y << endl;
+		//if (deg1*deg2 > 0 && abs(deg1 - deg2) < 0.4) return;
 
+		//cout << "cross = " << cross_x << " " << cross_y << endl;
 		if (abs(deg1 - deg2) < 0.4) return;
 
 		circle(park_roi, Point2f(cross_x, cross_y), 5, Scalar(0, 255, 0), 3, 8);
@@ -788,7 +789,7 @@ void Lane_Detector::get_crosspoint()
 }
 
 void Lane_Detector::parking_init() {
-	capture_park.open(3);
+	capture_park.open(1);
 	parking_mode_onoff = true;
 	p1_y1 = 0;
 	p2_y1 = 0;
@@ -893,20 +894,21 @@ void Lane_Detector::stop_line()
 	vector<Vec2f> linesL;
 	int Lstop_x1, Lstop_x2, Lstop_y1 = 0, Lstop_y2 = 0;
 
+
 	stop_img = input_left;
 
 	if (uturn_mode_onoff)
 	{
 		GaussianBlur(stop_img, roi_stop, Size(5, 5), 0);
 		cvtColor(roi_stop, roi_stop, COLOR_BGR2HSV);
-		inRange(img_hsv, HSV_YELLOW_LOWER, HSV_YELLOW_UPPER, range_stop);
+		inRange(img_hsv, Scalar(20, 20, 130), Scalar(40, 140, 255), range_stop);
 		Canny(range_stop, canny_stop, 70, 200);
 		HoughLines(canny_stop, linesL, 1, CV_PI / 180, threshold, 0, 0, 0, CV_PI / 2);
 	}
 	else
 	{
 		GaussianBlur(stop_img, roi_stop, Size(5, 5), 0);
-		inRange(roi_stop, Scalar(180, 100, 100), Scalar(255, 255, 255), range_stop);
+		inRange(roi_stop, Scalar(190, 100, 100), Scalar(255, 255, 255), range_stop);
 		Canny(range_stop, canny_stop, 70, 200);
 		HoughLines(canny_stop, linesL, 1, CV_PI / 180, threshold, 0, 0, CV_PI / 2, CV_PI);
 	}

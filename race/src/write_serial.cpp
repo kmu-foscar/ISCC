@@ -31,20 +31,20 @@ void controlCallback(const race::drive_values::ConstPtr& msg){
 		gear = 0x00;
 		speed_1 = speed_total;
 		speed_0 = 0x00;
-		front_brake = 0;
+		front_brake = 0x00;
 		estop = 0x00;
 	}
 	else if(msg->throttle > -255 && msg->throttle < 0){
 		gear = 0x02;
 		speed_1 = speed_total;
 		speed_0 = 0x00;
-		front_brake = 0;
+		front_brake = 0x00;
 		estop = 0x00;
 	}
 	else if(msg->throttle == 0){
 		speed_0 = 0x00;
 		speed_1 = 0x00;
-		gear = 0x00;
+		gear = 0x01;
 		front_brake = 0x33;
 		estop = 0x01;
 	}
@@ -90,12 +90,13 @@ int main (int argc, char** argv){
 	while(ros::ok()){
 		ros::spinOnce();
 		size_t num_write = 14;
-
+		str[4] = estop;
 		str[5] = gear;
 		str[6] = speed_0;
 		str[7] = speed_1;
 		str[8] = steer_0;
 		str[9] = steer_1;
+		str[10] = front_brake;
 		str[11] = alive;
 
 		ser.write(str,num_write);

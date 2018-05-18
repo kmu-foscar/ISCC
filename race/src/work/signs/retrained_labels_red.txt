@@ -1,0 +1,5 @@
+branch road
+no sign
+curve
+dynamic obstacle
+static obstacle

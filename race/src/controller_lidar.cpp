@@ -14,16 +14,16 @@ using namespace std;
 //장애물 인식범위
 #define O_LIMIT 2
 //장애물간 거리
-#define O_B_LIMIT 1.0
+#define O_B_LIMIT 1.1
 #define O_B_LIMIT_POW O_B_LIMIT * O_B_LIMIT
 #define O_LIMIT_POW O_LIMIT * O_LIMIT
 #define PI 3.141592
 #define MAX 10 
 
 //hyepro K_L only 1.3 K_R 1.0
-#define K_L 1.4
-#define K_R 1.4
-#define OBSTACLE_THRESHOLD 150
+#define K_L 1.6
+#define K_R 1.6
+#define OBSTACLE_THRESHOLD 30
 
 ros::Publisher pub;
 ros::Publisher return_sig_pub;
@@ -190,7 +190,7 @@ void calculator(obstacle_detector::Obstacles data)
 
     if(!isdetected) // OA mode starting condition
     {
-        isdetected = data.circles.size() >= 5 ? true : false;
+        isdetected = data.circles.size() >= 10 ? true : false;
 	if(isdetected) {
 	    return_msg.data = RETURN_OPERATE;
             return_sig_pub.publish(return_msg);
@@ -228,6 +228,7 @@ void calculator(obstacle_detector::Obstacles data)
     if(isdetected && oa_cnt >= OBSTACLE_THRESHOLD) { // oa off
         return_msg.data = RETURN_FINISH;
         return_sig_pub.publish(return_msg);
+	isdetected = false;
     }
     //점을 찾으면 true 못찾으면 false
     //left point 0, left point2 1, right point 2, right point2 3
@@ -236,24 +237,9 @@ void calculator(obstacle_detector::Obstacles data)
 
     double steering, RFlag, LFlag;
 
-	//좌우 첫번째 점이 모두 검출되지 않으면
-    if(!find[0] && !find[2])
-    {
-	msg.steering = 100;
-	msg.throttle = 5;
-        pub.publish(msg);
-	return;
-    }
-
-    else if(!find[2]&&!find[3])
-    {
-	msg.steering = 200;
-	pub.publish(msg);
-	return;
-    }
 
     //좌우 첫번째 장애물만 검출 시
-    if(!find[1] && !find[3])
+    if(!find[1] || !find[3])
     {
         geometry_msgs::Point p;
         p.x = (pl1.x + pr1.x) / 2;
@@ -308,13 +294,13 @@ void calculator(obstacle_detector::Obstacles data)
 	msg.steering = 0;
     else if(msg.steering > 200)
 	msg.steering = 200;
-    msg.throttle = 5;
+    msg.steering -= 6;   
+    msg.throttle = 7;
     
     //printf("steering : %d speed : %d\n", msg.steering, 1);
     if(isdetected) {
     	pub.publish(msg);
 	printf("steering : %d speed : %d\n", msg.steering, msg.throttle);
-	isdetected = false;
     }
 }
 
@@ -324,7 +310,7 @@ int main(int argc,	 char* argv[])
 	ros::NodeHandle nh;
   oa_onoff_sub = nh.subscribe("oa_onoff", 1, oa_onoffCallback);
 	ros::Subscriber sub = nh.subscribe("raw_obstacles", 1, calculator);
-	pub = nh.advertise<race::drive_values> ("Control", 100);
+	pub = nh.advertise<race::drive_values> ("Control", 1000);
 	return_sig_pub = nh.advertise<std_msgs::Int16>("return_signal", 1);
 	ros::spin();
 }
