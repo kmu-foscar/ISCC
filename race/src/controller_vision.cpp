@@ -10,18 +10,18 @@
 #include <signal.h>
 #include <time.h>
 
-#define CENTER_POINT 640
+#define CENTER_POINT 650
 #define CENTER_POINT_LA 690
 #define MAX_SPEED 9
 #define MIN_SPEED 7
 #define MISSION_SPEED 5
-#define PARKING_STATE_0_THRESHOLD 30.f
+#define PARKING_STATE_0_THRESHOLD 50.f
 #define PARKING_STATE_2_THRESHOLD 50.f
 #define PARKING_STATE_4_THRESHOLD 50.f
 #define PARKING_LIDAR_THRESHOLD 3.f
-#define UTURN_LIDAR_THRESHOLD 3.0f
+#define UTURN_LIDAR_THRESHOLD 4.0f
 #define UTURN_VISION_THRESHOLD 50
-#define CROSSWALK_THRESHOLD 200
+#define CROSSWALK_THRESHOLD 100
 #define STATIC_OBSTACLE_THRESHOLD 30
 #define MAX 5
 #define PI 3.1415
@@ -50,7 +50,7 @@ obstacle_detector::Obstacles obstacles_data;
 double begin, end;
 // variables for lane keeper
 float p_steering = -0.3f;
-float p_steering_curve = 40.f;
+float p_steering_curve = 15.f;
 float p_lookahead_curve = 10.f;
 float p_lookahead = 0.05f;
 
@@ -143,10 +143,11 @@ int main(int argc, char** argv) {
         }
         else if(so_onoff) {
             printf("static_obstacle_mode\n");
-	    ld->isNotRequired = false;
-            ld->operate();
+	        ld->isNotRequired = false;
             so_operate();
+            ld->operate();
             keep_lane(&control_msg);
+            control_msg.throttle = 7;
             control_pub.publish(control_msg);
         }
         else if(ut_onoff) {
@@ -302,6 +303,7 @@ void ut_operate() {
     break;
     }
 }
+int dynamic_state = 0;
 void do_operate() {
   bool exist_obstacle;
   obstacle_size > 0? exist_obstacle = true : exist_obstacle = false;
@@ -310,15 +312,17 @@ void do_operate() {
    	printf("%s\n" , "stop!!");
 	do_cnt = 0;
     control_msg.throttle = 0;
+    dynamic_state = 1;
   }
   else do_cnt++;
 
-  if(!isExist(do_cnt)) {
+  if(!isExist(do_cnt) && dynamic_state == 1) {
 	do_cnt = 0;
     printf("%s\n" , "go!!");
     return_msg.data = RETURN_FINISH;
     return_sig_pub.publish(return_msg);
     control_msg.throttle = 7;
+    dynamic_state = 0;
   }
 }
 void cw_operate() {
@@ -372,24 +376,23 @@ void pk_operate() {
     ld->isNotRequired = false;
     ld->operate();
     keep_lane(&control_msg);
-    printf("parking point 2 : %d\n", ld->parking_point2.y);
-    printf("parking point 1 : %d\n", ld->parking_point1.y);  
-    if(!is_front_parking && ld->parking_point1.y > 0) {
-	printf("obstacle_size : %d\n", obstacle_size);
+    printf("parking point 2 : %d\n", ld->p2_y1);
+    printf("parking point 1 : %d\n", ld->p1_y1);  
+    if(!is_front_parking && ld->p1_y1 > 0) {
+	    printf("obstacle_size : %d\n", obstacle_size);
         for(int i = 0; i < obstacle_size; i++) {
-	    printf("lidar distance : %f\n", obstacleDistance(car, obstacles_data.circles[i].center));
+	        printf("lidar distance : %f\n", obstacleDistance(car, obstacles_data.circles[i].center));
             if(obstacles_data.circles[i].center.x > 0 && obstacleDistance(car, obstacles_data.circles[i].center) < PARKING_LIDAR_THRESHOLD) {
-	
                 is_front_parking = true;
-		ld->parking_release();
-		printf("front parking\n");
+		        ld->parking_release();
+		        printf("front parking\n");
                 parking_state = 6;
                 break;
             }
         }
     }
     else  {
-	if(ld->parking_point2.y >= PARKING_STATE_0_THRESHOLD) {
+	if(ld->p2_y1 >= PARKING_STATE_0_THRESHOLD) {
 		printf("parking point detect!!!!!\n");
         	parking_state = -1;
 		ld->parking_state = 1;

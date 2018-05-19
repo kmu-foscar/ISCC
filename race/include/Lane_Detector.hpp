@@ -823,7 +823,7 @@ void Lane_Detector::detect_parking_line()
 	vector<Vec2f> linesL;
 	int Lstop_x1, Lstop_x2, Lstop_y1 = 0, Lstop_y2 = 0;
 
-	HoughLines(edge, linesL, 1, CV_PI / 180, threshold, 0, 0, 0, CV_PI / 2);
+	HoughLines(canny_p, linesL, 1, CV_PI / 180, threshold, 0, 0, 0, CV_PI / 2);
 
 	if (linesL.size() != 0)
 	{

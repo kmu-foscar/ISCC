@@ -4,7 +4,7 @@
     #include <std_msgs/Int16.h>
     #include "config.h"
 
-    int miyak[8] = {MODE_CROSSWALK, MODE_NARROW, MODE_DYNAMIC_OBSTACLE, MODE_STATIC_OBSTACLE, MODE_CURVE, MODE_UTURN, MODE_PARKING, MODE_BASE};
+    int miyak[8] = {MODE_CROSSWALK, MODE_NARROW, MODE_STATIC_OBSTACLE, MODE_DYNAMIC_OBSTACLE, MODE_CURVE, MODE_UTURN, MODE_PARKING, MODE_BASE};
     int sequence = 0;
     ros::Publisher pub, pub2, pub3, pub4, pub5, pub6, pub7, pub8;
     ros::Subscriber sub, sub_seq;
@@ -33,6 +33,7 @@
         return_sig = msg.data;
         if(return_sig == RETURN_FINISH) {
             sequence++;
+            printf("sequence : %d\n", sequence);
             switch (miyak[sequence]) {
                 case MODE_NARROW :
                 printf("Branch Road\n");
@@ -42,7 +43,8 @@
                 pk_onoff_msg.data = false;
                 ut_onoff_msg.data = false;
                 so_onoff_msg.data = false;
-                do_onoff_msg.data = false;    
+                do_onoff_msg.data = false;  
+                break;  
                 case MODE_DYNAMIC_OBSTACLE :
                 printf("Dynamic Obstacle\n");
                 lk_onoff_msg.data = false;
@@ -218,6 +220,8 @@
             so_onoff_msg.data = false;
             do_onoff_msg.data = false;
             publish_msgs();   
+            pub.publish(lk_onoff_msg);
+            pub4.publish(cw_onoff_msg);
         }
         ros::spin();
     }
